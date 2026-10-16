@@ -356,6 +356,10 @@ func (t quotaAwareTransport) RoundTrip(req *http.Request) (*http.Response, error
 	if err != nil || resp == nil {
 		return resp, err
 	}
+	// Usage headers are lightweight and captured even when body recording is off.
+	metering := llmrec.MeteringFrom(req.Context())
+	metering.CaptureHeaders(resp.Header)
+	resp.Body = metering.ObserveResponse(resp)
 	// Tee rather than read: a 200 is an SSE stream that must keep streaming. The
 	// 429 branch below reads through this wrapper, so its body lands in the
 	// capture before being replaced.

@@ -837,6 +837,22 @@ export interface UsageStats {
 
 // Per-model token usage for one task (GET /api/llm/records/by-model), from the
 // always-on llm_usage metering ledger. calls = number of LLM calls on this model.
+export interface ModelCostEstimate {
+  currency: "USD";
+  basis: "standard_api_equivalent";
+  price_version: string;
+  source_url: string;
+  input_usd: number;
+  cache_read_usd: number;
+  cache_write_usd: number;
+  output_usd: number;
+  total_usd: number;
+  without_cache_usd: number;
+  cache_read_savings_usd: number;
+  cache_write_premium_usd: number;
+  net_savings_usd: number;
+}
+
 export interface ModelTokenStat {
   model: string;
   calls: number;
@@ -844,6 +860,12 @@ export interface ModelTokenStat {
   output_tokens: number;
   cache_read_tokens: number;
   cache_write_tokens: number;
+  // Cost covers priced calls only; absent fields support older servers and mocks.
+  cost?: ModelCostEstimate | null;
+  priced_calls?: number;
+  unpriced_calls?: number;
+  usage_missing_calls?: number;
+  usage_sources?: string[];
 }
 
 export interface Session {

@@ -1,29 +1,38 @@
 package db
 
 import (
+	"encoding/json"
 	"sort"
 	"strconv"
 	"time"
+
+	"github.com/Autumn-27/artex/pricing"
 )
 
 // LLMUsage is one lightweight LLM-call metering row — the always-on usage ledger,
 // distinct from llm_records (which stores full request/response bodies and is a
-// gated debug feature). One row per completion call, written on both success and
-// error, so token accounting is complete even for interrupted/failed runs. Carries
+// gated debug feature). One row per reported inference (or ordinary API call),
+// written on success and error when available. Missing usage stays unknown. Carries
 // only the dimensions needed to slice token spend (model / profile / task / agent),
 // never any prompt or response content.
 type LLMUsage struct {
-	TaskID        string `json:"task_id"`        // task registry id (matches llm_records.task_id)
-	ExplorationID int64  `json:"exploration_id"` // exploration id parsed from the session (0 = unknown/non-task)
-	Worker        string `json:"worker"`         // agent lane: worker / planner / mainagent / goals
-	Model         string `json:"model"`
-	ProfileName   string `json:"profile_name"`
-	LatencyMs     int    `json:"latency_ms"`
-	InputTokens   int    `json:"input_tokens"`
-	OutputTokens  int    `json:"output_tokens"`
-	CacheRead     int    `json:"cache_read"`
-	CacheWrite    int    `json:"cache_write"`
-	Status        string `json:"status"` // ok | error
+	TaskID          string        `json:"task_id"`        // task registry id (matches llm_records.task_id)
+	ExplorationID   int64         `json:"exploration_id"` // exploration id parsed from the session (0 = unknown/non-task)
+	Worker          string        `json:"worker"`         // agent lane: worker / planner / mainagent / goals
+	Model           string        `json:"model"`
+	ProfileName     string        `json:"profile_name"`
+	LatencyMs       int           `json:"latency_ms"`
+	InputTokens     int           `json:"input_tokens"`
+	OutputTokens    int           `json:"output_tokens"`
+	CacheRead       int           `json:"cache_read"`
+	CacheWrite      int           `json:"cache_write"`
+	Status          string        `json:"status"` // ok | error
+	UsageKnown      *bool         `json:"usage_known,omitempty"`
+	UsageSource     string        `json:"usage_source"`
+	MeteringID      string        `json:"metering_id,omitempty"`
+	SessionID       string        `json:"session_id,omitempty"`
+	ReasoningTokens int           `json:"reasoning_tokens"`
+	Cost            *pricing.Cost `json:"cost,omitempty"`
 }
 
 const llmUsageSchema = `
@@ -45,6 +54,13 @@ CREATE TABLE IF NOT EXISTS llm_usage (
 CREATE INDEX IF NOT EXISTS idx_llm_usage_task  ON llm_usage(task_id);
 CREATE INDEX IF NOT EXISTS idx_llm_usage_model ON llm_usage(task_id, model);
 CREATE INDEX IF NOT EXISTS idx_llm_usage_exp   ON llm_usage(exploration_id);
+ALTER TABLE llm_usage ADD COLUMN IF NOT EXISTS usage_known BOOLEAN;
+ALTER TABLE llm_usage ADD COLUMN IF NOT EXISTS usage_source TEXT NOT NULL DEFAULT 'unknown';
+ALTER TABLE llm_usage ADD COLUMN IF NOT EXISTS metering_id TEXT;
+ALTER TABLE llm_usage ADD COLUMN IF NOT EXISTS session_id TEXT;
+ALTER TABLE llm_usage ADD COLUMN IF NOT EXISTS reasoning_tokens INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE llm_usage ADD COLUMN IF NOT EXISTS cost_snapshot JSONB;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_llm_usage_metering ON llm_usage(usage_source,metering_id) WHERE metering_id IS NOT NULL;
 `
 
 // EnsureLLMUsageTable creates the llm_usage metering table if it does not exist.
@@ -70,41 +86,63 @@ func (d *DB) InsertLLMUsage(u *LLMUsage) error {
 	if u.ExplorationID > 0 {
 		expID = u.ExplorationID
 	}
+	known := usageKnown(*u)
+	var cost any
+	if known {
+		if estimate := estimateUsage(*u); estimate != nil {
+			data, err := json.Marshal(estimate)
+			if err != nil {
+				return err
+			}
+			cost = string(data)
+		}
+	}
+	source := u.UsageSource
+	if source == "" {
+		source = "unknown"
+	}
 	_, err := d.Exec(`
-INSERT INTO llm_usage(task_id, exploration_id, worker, model, profile_name, latency_ms, input_tokens, output_tokens, cache_read, cache_write, status)
-VALUES (NULLIF($1,''),$2,NULLIF($3,''),NULLIF($4,''),NULLIF($5,''),$6,$7,$8,$9,$10,$11)`,
+INSERT INTO llm_usage(task_id, exploration_id, worker, model, profile_name, latency_ms, input_tokens, output_tokens, cache_read, cache_write, status,
+ usage_known, usage_source, metering_id, session_id, reasoning_tokens, cost_snapshot)
+VALUES (NULLIF($1,''),$2,NULLIF($3,''),NULLIF($4,''),NULLIF($5,''),$6,$7,$8,$9,$10,$11,$12,$13,NULLIF($14,''),NULLIF($15,''),$16,$17::jsonb)
+ON CONFLICT DO NOTHING`,
 		u.TaskID, expID, u.Worker, u.Model, u.ProfileName,
-		u.LatencyMs, u.InputTokens, u.OutputTokens, u.CacheRead, u.CacheWrite, u.Status)
+		u.LatencyMs, u.InputTokens, u.OutputTokens, u.CacheRead, u.CacheWrite, u.Status,
+		known, source, u.MeteringID, u.SessionID, u.ReasoningTokens, cost)
 	return err
 }
 
 // TokenByModel aggregates a task's LLM token usage grouped by model, most-used
 // first, from the always-on llm_usage ledger. taskID is the task registry id.
-// Accurate even with per-agent model bindings, pool rotation/failover, and
-// interrupted runs, since every call (success or error) is metered.
+// Preserves per-inference pricing and exposes unpriced/missing usage coverage,
+// including reported usage from failed calls.
 func (d *DB) TokenByModel(taskID string) ([]ModelTokenStat, error) {
 	rows, err := d.Query(`
-SELECT COALESCE(NULLIF(model,''),'(unknown)') AS model, COUNT(*) AS calls,
-       COALESCE(SUM(input_tokens),0), COALESCE(SUM(output_tokens),0),
-       COALESCE(SUM(cache_read),0), COALESCE(SUM(cache_write),0)
+SELECT COALESCE(NULLIF(model,''),'(unknown)'), input_tokens, output_tokens, cache_read, cache_write,
+       usage_known, usage_source, cost_snapshot
 FROM llm_usage
 WHERE COALESCE(task_id,'') = $1
-GROUP BY model
-ORDER BY SUM(input_tokens) + SUM(output_tokens) DESC, model`, taskID)
+ORDER BY id`, taskID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	out := []ModelTokenStat{}
+	items := []LLMUsage{}
 	for rows.Next() {
-		var m ModelTokenStat
-		if err := rows.Scan(&m.Model, &m.Calls, &m.InputTokens, &m.OutputTokens,
-			&m.CacheReadTokens, &m.CacheWriteTokens); err != nil {
+		var u LLMUsage
+		var cost []byte
+		if err := rows.Scan(&u.Model, &u.InputTokens, &u.OutputTokens, &u.CacheRead, &u.CacheWrite,
+			&u.UsageKnown, &u.UsageSource, &cost); err != nil {
 			return nil, err
 		}
-		out = append(out, m)
+		if len(cost) > 0 {
+			if err := json.Unmarshal(cost, &u.Cost); err != nil {
+				return nil, err
+			}
+		}
+		items = append(items, u)
 	}
-	return out, rows.Err()
+	return aggregateModelUsage(items), rows.Err()
 }
 
 // ProfileUsage aggregates the whole ledger's token spend for one LLM profile

@@ -122,6 +122,7 @@ func (r *Recorder) Stream(ctx context.Context, req llm.CompletionRequest) iter.S
 	// gated. Only body serialization + response accumulation are skipped when off.
 	recordBodies := r.enabled == nil || r.enabled()
 	start := time.Now()
+	ctx, metering := NewMetering(ctx)
 	session := transcript.SessionIDFrom(ctx)
 	parsedID, worker := parseSession(session)
 	if ov := workerFrom(ctx); ov != "" {
@@ -166,14 +167,33 @@ func (r *Recorder) Stream(ctx context.Context, req llm.CompletionRequest) iter.S
 			if err != nil {
 				status = "error"
 			}
-			// Lightweight metering row — always written.
-			r.recordUsage(taskID, expID, worker, usage, int(time.Since(start).Milliseconds()), status)
+			// Header totals replace normalized usage for the ledger and trace only;
+			// emitted stream events have already been counted by their consumer.
+			metadata := metering.snapshot()
+			usage = metadata.applyAPI(usage)
+			if metadata.Present {
+				usage = metadata.usage()
+			}
+			r.recordUsage(taskID, expID, session, worker, usage, metadata, int(time.Since(start).Milliseconds()), status)
 			// Heavy trace row — only when body recording is on.
 			if recordBodies {
 				r.record(req, session, taskID, worker, reqBody, capt, start, textBuf.String(), thinkingBuf.String(), usage, stopReason, err)
 			}
 		}
 		defer func() { finish(ctx.Err()) }()
+
+		// Send supplemental counters before message_stop, since consumers may
+		// stop iterating at that event. The fallback after the loop covers
+		// providers that omit message_stop; updating usage makes this idempotent.
+		emitSupplement := func() bool {
+			metadata := metering.snapshot()
+			corrected := metadata.applyAPI(usage)
+			if extra := corrected.CacheWriteTokens - usage.CacheWriteTokens; extra > 0 {
+				usage.CacheWriteTokens = corrected.CacheWriteTokens
+				return yield(llm.StreamEvent{Type: llm.SEMessageDelta, Usage: llm.Usage{CacheWriteTokens: extra}}, nil)
+			}
+			return true
+		}
 
 		for ev, err := range r.inner.Stream(ctx, req) {
 			if err != nil {
@@ -207,11 +227,17 @@ func (r *Recorder) Stream(ctx context.Context, req llm.CompletionRequest) iter.S
 				}
 				usage.Add(ev.Usage)
 			}
+			if ev.Type == llm.SEMessageStop && !emitSupplement() {
+				return
+			}
 			if !yield(ev, err) {
 				return
 			}
 		}
 
+		if !emitSupplement() {
+			return
+		}
 		// Stream completed normally.
 		finish(streamErr)
 	}
@@ -222,6 +248,7 @@ func (r *Recorder) Stream(ctx context.Context, req llm.CompletionRequest) iter.S
 func (r *Recorder) Complete(ctx context.Context, req llm.CompletionRequest) (llm.Message, string, llm.Usage, error) {
 	recordBodies := r.enabled == nil || r.enabled()
 	start := time.Now()
+	ctx, metering := NewMetering(ctx)
 	session := transcript.SessionIDFrom(ctx)
 	parsedID, worker := parseSession(session)
 	if ov := workerFrom(ctx); ov != "" {
@@ -241,11 +268,16 @@ func (r *Recorder) Complete(ctx context.Context, req llm.CompletionRequest) (llm
 	}
 
 	msg, stopReason, usage, err := r.inner.Complete(ctx, req)
+	metadata := metering.snapshot()
+	usage = metadata.applyAPI(usage)
+	if metadata.Present {
+		usage = metadata.usage()
+	}
 	status := "ok"
 	if err != nil {
 		status = "error"
 	}
-	r.recordUsage(taskID, expID, worker, usage, int(time.Since(start).Milliseconds()), status)
+	r.recordUsage(taskID, expID, session, worker, usage, metadata, int(time.Since(start).Milliseconds()), status)
 	if recordBodies {
 		r.record(req, session, taskID, worker, reqBody, capt, start, msg.Text(), thinkingText(msg), usage, stopReason, err)
 	}
@@ -262,31 +294,75 @@ func thinkingText(msg llm.Message) string {
 	return b.String()
 }
 
-// recordUsage appends one lightweight metering row to llm_usage (no bodies). Skips
-// zero-token calls with no model, which carry nothing worth metering.
-func (r *Recorder) recordUsage(taskID string, expID int64, worker string, usage llm.Usage, latencyMs int, status string) {
+// usageRows produces one row per backend inference, or the ordinary API call.
+// SDK zero usage cannot distinguish a real zero from omitted usage, so it stays
+// unknown. A known empty bridge envelope means no new inference and no row.
+func (r *Recorder) usageRows(taskID string, expID int64, session, worker string, usage llm.Usage, metadata meteringSnapshot, latencyMs int, status string) []db.LLMUsage {
+	known := usage.InputTokens > 0 || usage.OutputTokens > 0 || usage.CacheReadTokens > 0 || usage.CacheWriteTokens > 0
+	if !metadata.Present {
+		known = metadata.API.knownUsage(usage)
+	}
+	base := db.LLMUsage{
+		TaskID: taskID, ExplorationID: expID, SessionID: session, Worker: worker,
+		Model: r.model, ProfileName: r.prof, LatencyMs: latencyMs, Status: status,
+		InputTokens: usage.InputTokens, OutputTokens: usage.OutputTokens,
+		CacheRead: usage.CacheReadTokens, CacheWrite: usage.CacheWriteTokens,
+		UsageKnown: &known, UsageSource: "api",
+	}
+	if !metadata.Present {
+		if metadata.API.Reasoning != nil && !metadata.API.Incomplete {
+			base.ReasoningTokens = *metadata.API.Reasoning
+		}
+		if r.model == "" && !known {
+			return nil
+		}
+		return []db.LLMUsage{base}
+	}
+	if metadata.Deferred {
+		return nil
+	}
+	base.UsageSource = metadata.Source
+	measured := true
+	missing := false
+	base.UsageKnown = &measured
+	rows := make([]db.LLMUsage, 0, len(metadata.Samples)+len(metadata.MissingIDs)+1)
+	for _, sample := range metadata.Samples {
+		row := base
+		row.Model = sample.Model
+		row.MeteringID = sample.ID
+		row.InputTokens = sample.InputTokens
+		row.OutputTokens = sample.OutputTokens
+		row.CacheRead = sample.CacheReadTokens
+		row.CacheWrite = sample.CacheWriteTokens
+		row.ReasoningTokens = sample.ReasoningTokens
+		rows = append(rows, row)
+	}
+	base.UsageKnown = &missing
+	base.InputTokens = 0
+	base.OutputTokens = 0
+	base.CacheRead = 0
+	base.CacheWrite = 0
+	for _, id := range metadata.MissingIDs {
+		row := base
+		row.MeteringID = id
+		rows = append(rows, row)
+	}
+	// Legacy unknown metadata has no stable attempt ID. Retain a conservative
+	// unknown row in addition to any measurements retained from other attempts.
+	if !metadata.Known {
+		rows = append(rows, base)
+	}
+	return rows
+}
+
+func (r *Recorder) recordUsage(taskID string, expID int64, session, worker string, usage llm.Usage, metadata meteringSnapshot, latencyMs int, status string) {
 	if r.pg == nil {
 		return
 	}
-	if r.model == "" && usage.InputTokens == 0 && usage.OutputTokens == 0 &&
-		usage.CacheReadTokens == 0 && usage.CacheWriteTokens == 0 {
-		return
-	}
-	err := r.pg.InsertLLMUsage(&db.LLMUsage{
-		TaskID:        taskID,
-		ExplorationID: expID,
-		Worker:        worker,
-		Model:         r.model,
-		ProfileName:   r.prof,
-		LatencyMs:     latencyMs,
-		InputTokens:   usage.InputTokens,
-		OutputTokens:  usage.OutputTokens,
-		CacheRead:     usage.CacheReadTokens,
-		CacheWrite:    usage.CacheWriteTokens,
-		Status:        status,
-	})
-	if err != nil {
-		log.Printf("[llmusage] insert: %v", err)
+	for _, row := range r.usageRows(taskID, expID, session, worker, usage, metadata, latencyMs, status) {
+		if err := r.pg.InsertLLMUsage(&row); err != nil {
+			log.Printf("[llmusage] insert: %v", err)
+		}
 	}
 }
 

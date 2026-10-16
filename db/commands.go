@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
+
+	"github.com/Autumn-27/artex/pricing"
 )
 
 // CommandRecord is a paired tool_use + tool_result from the activity table
@@ -280,12 +282,17 @@ func (d *DB) ListLLMRecords(model, session, task string, page, size int) ([]LLMR
 // llm_usage metering ledger (see db/llm_usage.go). Calls is the number of LLM calls
 // that hit this model.
 type ModelTokenStat struct {
-	Model            string `json:"model"`
-	Calls            int    `json:"calls"`
-	InputTokens      int    `json:"input_tokens"`
-	OutputTokens     int    `json:"output_tokens"`
-	CacheReadTokens  int    `json:"cache_read_tokens"`
-	CacheWriteTokens int    `json:"cache_write_tokens"`
+	Model             string        `json:"model"`
+	Calls             int           `json:"calls"`
+	InputTokens       int           `json:"input_tokens"`
+	OutputTokens      int           `json:"output_tokens"`
+	CacheReadTokens   int           `json:"cache_read_tokens"`
+	CacheWriteTokens  int           `json:"cache_write_tokens"`
+	Cost              *pricing.Cost `json:"cost"`
+	PricedCalls       int           `json:"priced_calls"`
+	UnpricedCalls     int           `json:"unpriced_calls"`
+	UsageMissingCalls int           `json:"usage_missing_calls"`
+	UsageSources      []string      `json:"usage_sources"`
 }
 
 // LLMTask is one distinct task with its LLM-record count.

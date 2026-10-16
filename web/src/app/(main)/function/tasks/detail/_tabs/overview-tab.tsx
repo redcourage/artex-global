@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import { ModelCostSummary } from "@/components/model-cost-summary";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +31,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { getDateLocale } from "@/i18n/datetime";
 import { api } from "@/lib/api";
+import { hasReportedUsage } from "@/lib/model-cost";
 import type {
   AssetInterceptKind,
   AssetInterceptRule,
@@ -416,6 +418,7 @@ export function OverviewTab({ taskId }: { taskId: string }) {
     },
     { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, calls: 0 },
   );
+  const tokensReported = modelTokens.some(hasReportedUsage);
 
   return (
     <div className="flex flex-col gap-4">
@@ -720,7 +723,7 @@ export function OverviewTab({ taskId }: { taskId: string }) {
           </CardContent>
         </Card>
       )}
-      {/* LLM Token 사용량: 모델별로 묶으며, 데이터는 llm_records 에서 온다(LLM 녹화 필요). */}
+      {/* Per-model token usage and API-equivalent estimates from the always-on usage ledger. */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
@@ -737,20 +740,20 @@ export function OverviewTab({ taskId }: { taskId: string }) {
               <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
                 <span className="tabular-nums">
                   <span className="text-muted-foreground">{t("tokens.input")} </span>
-                  <span className="font-semibold">{fmtTokens(tokenTotals.input)}</span>
+                  <span className="font-semibold">{tokensReported ? fmtTokens(tokenTotals.input) : "—"}</span>
                 </span>
                 <span className="tabular-nums">
                   <span className="text-muted-foreground">{t("tokens.output")} </span>
-                  <span className="font-semibold">{fmtTokens(tokenTotals.output)}</span>
+                  <span className="font-semibold">{tokensReported ? fmtTokens(tokenTotals.output) : "—"}</span>
                 </span>
                 <span className="tabular-nums">
                   <span className="text-muted-foreground">{t("tokens.cacheRead")} </span>
-                  <span className="font-semibold">{fmtTokens(tokenTotals.cacheRead)}</span>
+                  <span className="font-semibold">{tokensReported ? fmtTokens(tokenTotals.cacheRead) : "—"}</span>
                 </span>
                 <span className="tabular-nums">
                   <span className="text-muted-foreground">{t("tokens.cacheHitRate")} </span>
                   <span className="font-semibold text-emerald-500">
-                    {cacheHitRate(tokenTotals.cacheRead, tokenTotals.input)}
+                    {tokensReported ? cacheHitRate(tokenTotals.cacheRead, tokenTotals.input) : "—"}
                   </span>
                 </span>
               </div>
@@ -774,17 +777,24 @@ export function OverviewTab({ taskId }: { taskId: string }) {
                           {m.model}
                         </td>
                         <td className="py-1.5 pr-3 text-right tabular-nums">{m.calls}</td>
-                        <td className="py-1.5 pr-3 text-right tabular-nums">{fmtTokens(m.input_tokens)}</td>
-                        <td className="py-1.5 pr-3 text-right tabular-nums">{fmtTokens(m.output_tokens)}</td>
-                        <td className="py-1.5 pr-3 text-right tabular-nums">{fmtTokens(m.cache_read_tokens)}</td>
+                        <td className="py-1.5 pr-3 text-right tabular-nums">
+                          {hasReportedUsage(m) ? fmtTokens(m.input_tokens) : "—"}
+                        </td>
+                        <td className="py-1.5 pr-3 text-right tabular-nums">
+                          {hasReportedUsage(m) ? fmtTokens(m.output_tokens) : "—"}
+                        </td>
+                        <td className="py-1.5 pr-3 text-right tabular-nums">
+                          {hasReportedUsage(m) ? fmtTokens(m.cache_read_tokens) : "—"}
+                        </td>
                         <td className="py-1.5 text-right tabular-nums text-emerald-500">
-                          {cacheHitRate(m.cache_read_tokens, m.input_tokens)}
+                          {hasReportedUsage(m) ? cacheHitRate(m.cache_read_tokens, m.input_tokens) : "—"}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
+              <ModelCostSummary models={modelTokens} />
             </>
           ) : (
             <p className="text-muted-foreground text-sm">{t("tokens.empty")}</p>
