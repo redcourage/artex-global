@@ -4,7 +4,7 @@ import json
 import unittest
 
 from bridge import serve_client
-from protocol import ServiceUnavailable, SessionConflict
+from protocol import ServiceUnavailable, SessionConflict, SubscriptionLimit
 
 
 class Writer:
@@ -34,8 +34,28 @@ class App:
     async def models(self):
         return {'data': [{'id': 'account-model', 'default': True}]}
 
+    async def quota_status(self):
+        return {'available': False, 'retry_at': 123}
+
 
 class HTTPTests(unittest.IsolatedAsyncioTestCase):
+    async def test_subscription_status_requires_auth_and_errors_keep_code(self):
+        class Stub:
+            app = App()
+            async def complete(self, key, body):
+                raise SubscriptionLimit(123)
+        stub = Stub()
+        head, result = await self.request(stub, '/v1/quota', token='wrong')
+        self.assertIn('401', head)
+        head, result = await self.request(stub, '/v1/quota')
+        self.assertIn('200', head)
+        self.assertFalse(result['available'])
+        head, result = await self.request(stub, '/v1/chat/completions', {})
+        self.assertIn('423', head)
+        self.assertNotIn('Retry-After: 1', head)
+        self.assertEqual(result['error']['code'], 'codex_subscription_limit')
+        self.assertEqual(result['error']['retry_at'], 123)
+
     async def request(self, bridge, path='/health', payload=None, token='secret'):
         reader = asyncio.StreamReader()
         writer = Writer()

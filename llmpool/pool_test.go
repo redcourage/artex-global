@@ -94,6 +94,34 @@ func drain(seq iter.Seq2[llm.StreamEvent, error]) (string, error) {
 	return sb.String(), nil
 }
 
+func TestSubscriptionLimitDoesNotUsePaidFallback(t *testing.T) {
+	a, b := failProv("subscription", 423), okProv("paid", "must not run")
+	p := New([]*Member{member(1, "subscription", 10, a), member(2, "paid", 5, b)}, NewRegistry(nil, nil))
+	_, _, _, err := p.Complete(context.Background(), llm.CompletionRequest{})
+	if err == nil || a.calls != 1 || b.calls != 0 {
+		t.Fatalf("err=%v calls=%d/%d", err, a.calls, b.calls)
+	}
+}
+
+func TestSubscriptionLimitIdentifiesActualPoolMember(t *testing.T) {
+	for _, stream := range []bool{false, true} {
+		head, limited, paid := failProv("head", 503), failProv("limited", 423), okProv("paid", "must not run")
+		m := member(2, "limited", 5, limited)
+		m.RecoveryFingerprint = "immutable-source"
+		p := New([]*Member{member(1, "head", 10, head), m, member(3, "paid", 0, paid)}, NewRegistry(nil, nil))
+		var err error
+		if stream {
+			_, err = drain(p.Stream(context.Background(), llm.CompletionRequest{}))
+		} else {
+			_, _, _, err = p.Complete(context.Background(), llm.CompletionRequest{})
+		}
+		var source *MemberError
+		if !errors.As(err, &source) || source.ProfileID != 2 || source.Fingerprint != "immutable-source" || paid.calls != 0 {
+			t.Fatalf("source=%+v err=%v paid=%d", source, err, paid.calls)
+		}
+	}
+}
+
 func TestFailoverOnNoCredit(t *testing.T) {
 	a, b := failProv("a", 402), okProv("b", "hello")
 	p := New([]*Member{member(1, "a", 10, a), member(2, "b", 5, b)}, NewRegistry(nil, nil))

@@ -604,13 +604,15 @@ function ChatView({
     if (conv.running) setRunning(true);
   }, [conv.running]);
 
-  // poll while a turn is running: pull new steps after the cursor.
+  // Keep reconciling after a turn ends: another tab/trigger can complete a turn
+  // between sidebar snapshots, so `running` is not a delivery guarantee.
+  // Wait for the initial history cursor to avoid racing the latest-page load.
   React.useEffect(() => {
-    if (!running) return;
+    if (!historyLoaded) return;
     let live = true;
     let timer: ReturnType<typeof setTimeout>;
     const tick = async () => {
-      let keepPolling = true;
+      let delay = running ? 1000 : 3000;
       try {
         const r = await api.conversationMessages(conv.id, cursorRef.current);
         if (!live) return;
@@ -618,14 +620,14 @@ function ChatView({
           setMessages((prev) => mergeActivities(prev, r.items));
         }
         cursorRef.current = Math.max(cursorRef.current, r.cursor);
-        keepPolling = r.running;
+        delay = r.running ? 1000 : 3000;
         setRunning(r.running);
-        if (!r.running) onTitleMaybeChanged(); // first-turn auto-title landed
+        if (!r.running && (running || r.items.length)) onTitleMaybeChanged(); // auto-title or background turn
       } catch {
         /* transient — keep polling */
       } finally {
         // Slow responses must not overlap another poll with the same cursor.
-        if (live && keepPolling) timer = setTimeout(() => void tick(), 1000);
+        if (live) timer = setTimeout(() => void tick(), delay);
       }
     };
     void tick();
@@ -633,7 +635,7 @@ function ChatView({
       live = false;
       clearTimeout(timer);
     };
-  }, [running, conv.id, onTitleMaybeChanged]);
+  }, [historyLoaded, running, conv.id, onTitleMaybeChanged]);
 
   const loadFocusPage = React.useCallback(
     (before: number) => api.conversationHistory(conv.id, before, HISTORY_PAGE),
@@ -714,6 +716,21 @@ function ChatView({
     const vp = viewport();
     if (vp) vp.scrollTop = vp.scrollHeight;
   }, [messages, running, viewport, approvalFocus.state]);
+
+  // The full answer is fetched lazily inside Transcript. Its expansion does not
+  // change `messages`, so follow content resizing as well as new activity rows.
+  // Preserve the reading position when the user has scrolled away from the end.
+  React.useEffect(() => {
+    const el = contentRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => {
+      if (approvalFocus.state || !atBottomRef.current) return;
+      const vp = viewport();
+      if (vp) vp.scrollTop = vp.scrollHeight;
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [viewport, approvalFocus.state]);
 
   // Per-conversation token total, live — same accounting as the main-agent
   // console: completed runs' `result` sum + the in-progress run's latest `usage`.

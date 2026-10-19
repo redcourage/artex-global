@@ -206,6 +206,7 @@
       "skipped": "Skipped"
     },
     "engine": {
+      "quota_wait": "Waiting for subscription quota",
       "exploring": "Exploring",
       "idle": "Idle",
       "paused": "Paused",

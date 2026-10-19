@@ -96,7 +96,7 @@ const (
 // In particular, a quota error after partial streaming advances the task cursor
 // for the next LLM call but must not replay this whole intent on the backup.
 func retryableWorkerModelError(reason harness.TerminalReason, err error) bool {
-	return reason == harness.ReasonModelError && !isTaskLLMRuntimeError(err)
+	return reason == harness.ReasonModelError && !isTaskLLMRuntimeError(err) && !agent.IsSubscriptionLimit(err) && !agent.NeedsToolReview(err)
 }
 
 // Engine drives the event-driven exploration loop with real LLM agents
@@ -859,6 +859,9 @@ func (e *Engine) plannerLoop(ctx context.Context, t *Task) {
 		if e.IsPaused(t.ID) {
 			return // user-paused: don't plan
 		}
+		if e.subscriptionWaiting(t.ID) {
+			return
+		}
 		if e.IsDeleting(t.ID) {
 			return
 		}
@@ -998,6 +1001,9 @@ func (e *Engine) workerLoop(ctx context.Context, t *Task, name string) {
 // runIntent. Returns false when nothing was claimable. The pool worker loop is its
 // only caller.
 func (e *Engine) runWorkerStep(ctx context.Context, t *Task, name string, worker *agent.Worker) bool {
+	if e.subscriptionWaiting(t.ID) {
+		return false
+	}
 	intent := e.claimNext(t, name)
 	if intent == nil {
 		return false
@@ -1160,6 +1166,19 @@ func (e *Engine) runIntent(ctx context.Context, t *Task, name string, worker *ag
 		log.Printf("[worker %s] task %s 意图 #%d 被终止(stopped)", name, t.ID, intent.ID)
 		e.touch(t.ID)
 		t.Notify()
+		return true
+	}
+	if agent.NeedsToolReview(err) {
+		if stateErr := transitionIntentState(t.Store, intent.ID, "running", "paused"); stateErr != nil {
+			log.Printf("[worker %s] tool review state: %v", name, stateErr)
+		}
+		taskEmit(db.Activity{Kind: "tool_review_required", Summary: "도구 실행 결과 검토가 필요하여 이 작업을 일시정지했습니다.", Detail: err.Error()})
+		return true
+	}
+	if agent.IsSubscriptionLimit(err) {
+		if stateErr := transitionIntentState(t.Store, intent.ID, "running", "open"); stateErr != nil {
+			log.Printf("[worker %s] quota wait state: %v", name, stateErr)
+		}
 		return true
 	}
 	if err != nil {

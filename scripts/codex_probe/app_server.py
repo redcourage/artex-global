@@ -4,7 +4,8 @@ import json
 import os
 import time
 
-from protocol import ProtocolError, ServiceUnavailable
+from protocol import ProtocolError, ServiceUnavailable, SubscriptionLimit
+from quota import QuotaState
 
 
 def retryable_codex_error(info):
@@ -40,6 +41,19 @@ class AppServer:
         self.generation = 0
         self._broken = False
         self._ready_lock = asyncio.Lock()
+        self.quota = QuotaState(output)
+        self._quota_lock = asyncio.Lock()
+
+    async def quota_status(self):
+        async with self._quota_lock:
+            await self.ensure_ready()
+            generation = self.quota.generation
+            snapshot = await self.rpc('account/rateLimits/read', {})
+            if not isinstance(snapshot, dict):
+                raise ServiceUnavailable('Invalid Codex quota snapshot')
+            if generation == self.quota.generation:
+                self.quota.update(snapshot)
+            return self.quota.status()
 
     def log(self, event, **fields):
         row = {'time': time.time(), 'event': event, **fields}
@@ -200,6 +214,10 @@ class AppServer:
                 data = error.get('data') if isinstance(error, dict) else None
                 retryable = code not in (-32600, -32601, -32602)
                 if isinstance(data, dict) and 'codexErrorInfo' in data:
+                    if data['codexErrorInfo'] == 'usageLimitExceeded':
+                        self.quota.block()
+                        fut.set_exception(SubscriptionLimit())
+                        return
                     retryable = retryable and retryable_codex_error(data['codexErrorInfo'])
                 cls = ServiceUnavailable if retryable else ProtocolError
                 fut.set_exception(cls('Codex RPC rejected the request' if cls is ProtocolError
@@ -274,8 +292,11 @@ class AppServer:
             else:
                 error = turn.get('error')
                 info = error.get('codexErrorInfo') if isinstance(error, dict) else None
+                if info == 'usageLimitExceeded':
+                    self.quota.block()
                 state.events.put_nowait({'kind': 'error',
                     'error': 'Codex turn did not complete',
+                    'subscription_limit': info == 'usageLimitExceeded',
                     'retryable': status == 'failed' and retryable_codex_error(info)})
 
     async def close(self):

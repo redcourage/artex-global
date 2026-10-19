@@ -65,7 +65,7 @@ func (s *Server) poolMember(p *db.LLMProfile, rank int) *llmpool.Member {
 	return &llmpool.Member{
 		ID: p.ID, Name: p.Name, Model: p.Model, Format: p.Format,
 		Priority: p.Priority, Active: p.IsDefault, Rank: rank,
-		WindowTokens: cfg.CompactionWindow(), Prov: prov,
+		WindowTokens: cfg.CompactionWindow(), Prov: prov, RecoveryFingerprint: subscriptionFingerprint(cfg),
 	}
 }
 
@@ -103,7 +103,7 @@ func (s *Server) poolChain(headID int64, headProv llm.Provider, headCfg agent.Co
 	members := []*llmpool.Member{{
 		ID: head.ID, Name: head.Name, Model: head.Model, Format: head.Format,
 		Priority: head.Priority, Active: head.IsDefault, Rank: llmpool.RankActive,
-		WindowTokens: headCfg.CompactionWindow(), Prov: headProv,
+		WindowTokens: headCfg.CompactionWindow(), Prov: headProv, RecoveryFingerprint: subscriptionFingerprint(headCfg),
 	}}
 	for _, p := range profs {
 		if p.ID == headID {

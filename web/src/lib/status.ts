@@ -80,6 +80,7 @@ const engine: Record<string, StatusMeta> = {
   exploring: { tone: "blue" },
   paused: { tone: "amber" },
   stalled: { tone: "red" },
+  quota_wait: { tone: "amber" },
   idle: { tone: "neutral" },
 };
 

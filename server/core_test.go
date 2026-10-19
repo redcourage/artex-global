@@ -24,7 +24,15 @@ func TestCoreTaskLifecyclePG(t *testing.T) {
 	}
 	defer m.Close()
 	td := t.TempDir()
-	s := New(context.Background(), m, td, td, td)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	s := New(ctx, m, td, td, td)
+	// Other config tests leave synthetic active profiles in the shared test DB.
+	// This lifecycle test needs the documented raw-goal fallback, not a request
+	// to that profile's external API with a fake key and a three-second deadline.
+	s.cfgMu.Lock()
+	s.llmOn, s.llmProv = false, nil
+	s.cfgMu.Unlock()
 	h := s.Handler()
 	tok, err := signJWT(s.jwtKey)
 	if err != nil {

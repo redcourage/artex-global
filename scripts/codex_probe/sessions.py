@@ -3,11 +3,18 @@ import asyncio
 from collections import deque
 from contextlib import asynccontextmanager
 import copy
+import hashlib
 import json
 import time
 import uuid
 
-from protocol import ProtocolError, ServiceUnavailable, SessionConflict
+from protocol import ProtocolError, ServiceUnavailable, SessionConflict, SubscriptionLimit, ToolReviewRequired
+
+
+def replay_start(messages):
+    # Worker Resume appends a continuation message, not a new user operation.
+    return max((i for i, m in enumerate(messages) if m['role'] == 'user'
+                and not m.get('content', '').startswith('[ARTEX_AUTOMATIC_CONTINUATION] ')), default=0)
 
 
 class UsageTracker:
@@ -70,14 +77,116 @@ def canonical(messages):
         message.pop('reasoning_content', None)
         for call in message.get('tool_calls', []):
             call.pop('index', None)
+            # ARTEX/Norma's transcript writer compacts json.RawMessage tool
+            # inputs. Resume may also change key order or Unicode escaping;
+            # compare the JSON value while preserving scalar types.
+            function = call['function']
+            function['arguments'] = tool_key(function['name'], function['arguments'])[1]
     return out
 
 
-def added_messages(previous, current):
+MICRO_CLEARED = '[Old tool result content cleared]'
+COMPACTABLE_TOOLS = {'Read', 'Bash', 'Grep', 'Glob', 'WebFetch', 'WebSearch', 'Edit', 'Write'}
+COMPACT_PREAMBLE = ('This session is being continued from a previous conversation that ran out of context. '
+                    'The conversation is summarized below:\n\n')
+SUMMARY_SYSTEM = 'You are a helpful AI assistant tasked with summarizing conversations.'
+SUMMARY_START = 'CRITICAL: Respond with TEXT ONLY. Do NOT call any tools.'
+SUMMARY_END = ('REMINDER: Do NOT call any tools. Respond with plain text only — an <analysis> block '
+               'followed by a <summary> block. Tool calls will be rejected and you will fail the task.')
+
+
+def reconciled_history(previous, current, *, restore_cleared=False):
+    """Accept only Norma's one-way clearing of known, completed tool outputs.
+
+    Keep the original observation in our live history so transcript Resume and
+    process recovery cannot substitute a placeholder for an executed tool.
+    """
     old, new = canonical(previous), canonical(current)
+    compactable = {call['id'] for m in old for call in m.get('tool_calls', [])
+                   if call['function']['name'] in COMPACTABLE_TOOLS}
+    for i, (before, after) in enumerate(zip(old, new)):
+        if (before.get('role') == after.get('role') == 'tool'
+                and before.get('tool_call_id') in compactable
+                and {k: v for k, v in before.items() if k != 'content'} ==
+                    {k: v for k, v in after.items() if k != 'content'}):
+            if after.get('content') == MICRO_CLEARED:
+                new[i] = copy.deepcopy(before)
+            elif restore_cleared and before.get('content') == MICRO_CLEARED:
+                old[i] = copy.deepcopy(after)
     if new[:len(old)] != old:
         raise ProtocolError('Conversation history changed; context reset/compaction requires a new session')
+    return new
+
+
+def added_messages(previous, current):
+    new = reconciled_history(previous, current)
+    old = canonical(previous)
     return new[len(old):]
+
+
+def exposed_pending(state):
+    # Codex may have queued more parallel calls than we returned to ARTEX.
+    # Those calls have not executed and can safely be cancelled on rebase.
+    return {call['id'] for m in state.history for call in m.get('tool_calls', [])
+            if call['id'] in state.pending}
+
+
+def rehydrated_context(state, messages):
+    """A cold bridge can know only cleared outputs. Accept originals supplied
+    later by transcript Resume, but restart the thread to apply the new context.
+    All already-known values, call IDs and arguments remain immutable.
+    """
+    try:
+        restored = reconciled_history(state.history, messages, restore_cleared=True)
+    except ProtocolError:
+        return None
+    delta = restored[len(state.history):]
+    if any(m['role'] not in ('user', 'tool') for m in delta):
+        raise SessionConflict('Invalid continuation during context restoration')
+    pending_results(delta, state.pending)
+    if {m.get('tool_call_id') for m in delta if m['role'] == 'tool'} != exposed_pending(state):
+        raise SessionConflict('Context restoration requires all pending tool results')
+    names = set(state.names.values())
+    completed_tools(restored, names)
+    latest_user = replay_start(restored)
+    return restored, completed_tools(restored[latest_user:], names)
+
+
+def compaction_rebase(state, messages):
+    """Recognize Norma's summary boundary plus a retained suffix, never a reset
+    that drops unresolved tool calls. Return the view and the pre-summary replay
+    ledger, preserving completed outputs that disappeared behind the boundary.
+    """
+    if not (messages and messages[0]['role'] == 'user'
+            and messages[0].get('content', '').startswith(COMPACT_PREAMBLE)):
+        return None
+    names = set(state.names.values())
+    completed_tools(messages, names)
+    old, new = canonical(state.history), canonical(messages)
+    # Match the retained suffix, allowing only user messages (summary/skills)
+    # before it. Pending calls must remain in that suffix with their results.
+    for start in range(1, len(new)):
+        if any(m['role'] != 'user' for m in new[1:start]):
+            break
+        for count in range(min(len(old), len(new) - start), 0, -1):
+            try:
+                tail = reconciled_history(old[-count:], new[start:])
+            except ProtocolError:
+                continue
+            delta = tail[count:]
+            if any(m['role'] not in ('user', 'tool') for m in delta):
+                continue
+            results = {m.get('tool_call_id'): m for m in delta if m['role'] == 'tool'}
+            if set(results) != exposed_pending(state):
+                continue
+            if any(m.get('content') == MICRO_CLEARED for m in results.values()):
+                raise SessionConflict('Compaction removed an unresolved tool result')
+            full = old + delta
+            completed_tools(full, names)
+            latest_user = replay_start(full)
+            replay = completed_tools(full[latest_user:], names)
+            return new[:start] + tail, replay
+    raise SessionConflict('Compaction must retain the latest history and all pending tool results')
 
 
 def pending_results(messages, pending):
@@ -88,6 +197,8 @@ def pending_results(messages, pending):
         key = m.get('tool_call_id')
         if key not in pending or key in seen:
             raise ProtocolError('Unmatched or duplicate tool result: ' + str(key))
+        if m.get('content') == MICRO_CLEARED:
+            raise SessionConflict('Compaction removed an unresolved tool result; restore its recorded output')
         seen.add(key)
         found.append((pending[key], m.get('content', '')))
     return found
@@ -170,6 +281,8 @@ class Session:
         self.usage_invalid = False
         self.turn_usage_start = 0
         self.replay_results = {}
+        self.completed_actions = set()
+        self.rebase_replay = None
         self.attempt_id = 'missing-' + uuid.uuid4().hex
         self.carried_samples = {}
         self.missing_ids = set()
@@ -294,6 +407,19 @@ class Bridge:
         messages = [m for m in body['messages'] if m['role'] != 'system']
         system = '\n\n'.join(m.get('content', '') for m in body['messages'] if m['role'] == 'system')
         tools = body.get('tools', [])
+        # Norma's summarizer inherits the worker's session header, but its
+        # instructions/catalog are different. Use a separate, retry-stable lane.
+        # Render historical calls as observations; no historical tool is exposed
+        # as a callable dynamic tool in this text-only session.
+        if (system == SUMMARY_SYSTEM and not tools and messages
+                and messages[-1]['role'] == 'user'
+                and messages[-1].get('content', '').startswith(SUMMARY_START)
+                and messages[-1].get('content', '').endswith(SUMMARY_END)):
+            parent = key
+            key = ('summary', key, hashlib.sha256(signature.encode()).hexdigest())
+            messages = [{'role': 'user', 'content': restore_prompt(messages[:-1])
+                         + '\n\n' + messages[-1]['content']}]
+            self.app.log('summary_request', session=parent, request=key[2])
         async with self.lease(key):
             state = self.states.get(key)
             if state is not None:
@@ -307,13 +433,34 @@ class Bridge:
                         raise SessionConflict('Another request is still running in this session; retry it first')
                 else:
                     try:
-                        added_messages(state.history, messages)
+                        normalized = reconciled_history(state.history, messages)
                     except ProtocolError:
-                        if not state.pending and all(m['role'] == 'user' for m in messages):
+                        rebased = rehydrated_context(state, messages) or compaction_rebase(state, messages)
+                        if rebased is not None:
+                            messages, state.rebase_replay = rebased
+                            state.broken = True
+                            self.app.log('history_rebased', session=key, thread=state.thread,
+                                         previous_messages=len(state.history), messages=len(messages))
+                            # Commit the validated client view before any RPC.
+                            # Starting a replacement clears pending; a failed
+                            # start must still accept an identical retry without
+                            # rechecking the old pending set against a new turn.
+                            state.history = copy.deepcopy(messages)
+                        elif not state.pending and all(m['role'] == 'user' for m in messages):
                             await self.abort(state)
                             state = None
                         else:
+                            old, new = canonical(state.history), canonical(messages)
+                            first = next((i for i, (a, b) in enumerate(zip(old, new)) if a != b), min(len(old), len(new)))
+                            self.app.log('history_conflict', session=key, thread=state.thread,
+                                         previous_messages=len(old), messages=len(new),
+                                         first_difference=first, pending_tools=len(state.pending))
                             raise SessionConflict('Conversation history changed; use a new session for a different conversation')
+                    else:
+                        if normalized != canonical(messages):
+                            self.app.log('history_compacted', session=key, thread=state.thread,
+                                         previous_messages=len(state.history), messages=len(messages))
+                        messages = normalized
             if state is None:
                 completed_tools(messages, set(dynamic_tools(tools)[1].values()))
                 async with self.admission:
@@ -345,9 +492,20 @@ class Bridge:
 
     async def start_thread(self, state, messages):
         completed_tools(messages, set(state.names.values()))
-        latest_user = max((i for i, m in enumerate(messages) if m['role'] == 'user'), default=0)
+        latest_user = replay_start(messages)
         state.replay_results = completed_tools(messages[latest_user:], set(state.names.values()))
+        state.replay_results = {**state.replay_results, **(state.rebase_replay or {})}
+        # A new read may invalidate cached observations, but cannot invalidate
+        # evidence that an external action already happened. Unknown tools and
+        # Bash are treated conservatively; only these built-in readers refresh.
+        refreshable = {'Read', 'LS', 'WebFetch', 'WebSearch'}
+        state.completed_actions = {key for key in state.replay_results if key[0] not in refreshable}
         if state.thread:
+            # Preserve already-reported samples before replacing the tracker.
+            # An interrupted turn may have unreported usage; never price it as 0.
+            state.metering()
+            if state.active_turn and state.rebase_replay is not None:
+                state.missing_ids.add(state.attempt_id)
             await self.release_thread(state)
         state.pending = {}
         state.events = asyncio.Queue()
@@ -399,14 +557,21 @@ class Bridge:
                 return event
             key = tool_key(event['name'], event['arguments'])
             if key not in state.replay_results:
+                if key in state.completed_actions:
+                    raise ToolReviewRequired('A completed action was requested again after recovery advanced; inspect its recorded result before continuing')
                 state.replay_results.clear()
+                state.rebase_replay = None
                 return event
+            if state.replay_results[key] == MICRO_CLEARED:
+                raise SessionConflict('Historical tool output was cleared; restore its recorded output before retrying')
             await self.send_results(state, [{'role': 'tool', 'tool_call_id': event['id'],
                                            'content': 'Recovered recorded output (not a fresh execution):\n' + state.replay_results[key]}])
         raise SessionConflict('Recovered model repeatedly requested completed tools')
 
     async def advance(self, state, body, messages, signature):
         try:
+            if getattr(self.app, 'quota', None) and self.app.quota.blocked:
+                raise SubscriptionLimit(self.app.quota.retry_at)
             if hasattr(self.app, 'ensure_ready'):
                 await self.app.ensure_ready()
             fresh = not state.thread or state.broken or state.generation != getattr(self.app, 'generation', 0)
@@ -428,6 +593,8 @@ class Bridge:
                 state.turn_usage_start = state.usage.sequence
                 if not fresh:
                     state.replay_results = {}
+                    state.completed_actions = set()
+                    state.rebase_replay = None
                 starting = asyncio.create_task(self.app.rpc('turn/start', {'threadId': state.thread,
                     'input': [{'type': 'text', 'text': user_text or 'Continue.'}],
                     'effort': body.get('reasoning_effort') or 'low'}))
@@ -444,15 +611,23 @@ class Bridge:
                 state.active_turn = result['turn']['id']
             event = await self.next_event(state)
             if event['kind'] == 'error':
+                if event.get('subscription_limit'):
+                    raise SubscriptionLimit()
                 cls = ServiceUnavailable if event.get('retryable', True) else SessionConflict
                 raise cls(event['error'])
             if event['kind'] == 'text':
                 state.active_turn = None
+                state.rebase_replay = None
             else:
                 calls = [event]
-                while not state.events.empty():
+                # Norma MicroCompact retains five recent compactable outputs.
+                # Larger batches would clear brand-new results before the next
+                # request. Expose at most five; queued calls follow next round.
+                while len(calls) < 5 and not state.events.empty():
                     queued = state.events.get_nowait()
-                    if queued['kind'] != 'tool' or tool_key(queued['name'], queued['arguments']) in state.replay_results:
+                    if (queued['kind'] != 'tool'
+                            or tool_key(queued['name'], queued['arguments']) in state.replay_results
+                            or tool_key(queued['name'], queued['arguments']) in state.completed_actions):
                         state.backlog.append(queued)
                         break
                     calls.append(queued)

@@ -33,7 +33,19 @@ type Member struct {
 	// window can't hold the request is skipped rather than made to fail on it.
 	WindowTokens int
 	Prov         llm.Provider
+	// RecoveryFingerprint identifies the immutable source configuration without
+	// exposing credentials when a non-head member returns a resumable limit.
+	RecoveryFingerprint string
 }
+
+type MemberError struct {
+	ProfileID   int64
+	Fingerprint string
+	Cause       error
+}
+
+func (e *MemberError) Error() string { return e.Cause.Error() }
+func (e *MemberError) Unwrap() error { return e.Cause }
 
 // RankActive is the Rank the caller gives the chain head (the active profile, or
 // an explicitly bound one) so it always outranks any configured priority.
@@ -92,6 +104,9 @@ func (p *Pool) Stream(ctx context.Context, req llm.CompletionRequest) iter.Seq2[
 					break // safe window: nothing reached the caller yet
 				}
 				emitted = true
+				if err != nil {
+					err = &MemberError{ProfileID: m.ID, Fingerprint: m.RecoveryFingerprint, Cause: err}
+				}
 				if !yield(ev, err) {
 					return // caller stopped consuming (cancel / early exit)
 				}
@@ -140,7 +155,7 @@ func (p *Pool) Complete(ctx context.Context, req llm.CompletionRequest) (llm.Mes
 			// Non-failover error (e.g. ctx cancel, deterministic 4xx): surface as-is
 			// without tripping health, matching Stream's non-failover path.
 			p.health.Pass(m.ID)
-			return llm.Message{}, "", llm.Usage{}, err
+			return llm.Message{}, "", llm.Usage{}, &MemberError{ProfileID: m.ID, Fingerprint: m.RecoveryFingerprint, Cause: err}
 		}
 		lastErr = err
 		hard := isHardFailure(err)

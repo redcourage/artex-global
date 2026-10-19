@@ -1,4 +1,5 @@
 import asyncio
+import copy
 from pathlib import Path
 import unittest
 
@@ -60,6 +61,32 @@ class ProtocolTests(unittest.TestCase):
     def test_replaced_history_is_rejected_instead_of_mixed(self):
         with self.assertRaises(ProtocolError):
             added_messages([{'role': 'user', 'content': 'task A'}], [{'role': 'user', 'content': 'task B'}])
+
+    def test_resumed_tool_arguments_allow_json_serialization_changes(self):
+        old = [{'role': 'assistant', 'tool_calls': [{'id': 'read-1', 'type': 'function',
+                'function': {'name': 'Read', 'arguments': '{"path": "한글", "options": {"lines": [1, 2]}}'}}]}]
+        current = copy.deepcopy(old)
+        current[0]['tool_calls'][0]['function']['arguments'] = (
+            '{"options":{"lines":[1,2]},"path":"\\ud55c\\uae00"}')
+        current.append({'role': 'user', 'content': 'continue'})
+        self.assertEqual(added_messages(old, current), [current[-1]])
+        self.assertEqual(old[0]['tool_calls'][0]['function']['arguments'],
+                         '{"path": "한글", "options": {"lines": [1, 2]}}')
+
+    def test_resumed_history_still_rejects_changed_tool_data(self):
+        old = [{'role': 'assistant', 'tool_calls': [{'id': 'read-1', 'type': 'function',
+                'function': {'name': 'Read', 'arguments': '{"value": 1}'}}]},
+               {'role': 'tool', 'tool_call_id': 'read-1', 'content': 'original'}]
+        for replacement in ('{"value":2}', '{"value":true}', '{"value":"1"}'):
+            with self.subTest(arguments=replacement):
+                current = copy.deepcopy(old)
+                current[0]['tool_calls'][0]['function']['arguments'] = replacement
+                with self.assertRaises(ProtocolError):
+                    added_messages(old, current)
+        current = copy.deepcopy(old)
+        current[1]['content'] = 'changed'
+        with self.assertRaises(ProtocolError):
+            added_messages(old, current)
 
     def test_tool_results_match_pending_ids_and_duplicates_fail(self):
         messages = [{'role': 'tool', 'tool_call_id': 'call-7', 'content': 'file contents'}]

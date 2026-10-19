@@ -659,9 +659,6 @@ export function SessionsTab({ taskId }: { taskId: string }) {
   const snapshotRef = React.useRef(0); // task-level snapshot cursor → SSE since=
   const esRef = React.useRef<EventSource | null>(null);
   const activeKeyRef = React.useRef(mainSessionKey(0)); // current session key (for SSE dispatch/unread)
-  // Highest seq the SSE-down fallback poll has already merged, per session key —
-  // lets it skip setStore when a poll brings nothing new (no re-render churn).
-  const fallbackMaxRef = React.useRef<Record<string, number>>({});
   const atBottomRef = React.useRef(true); // transcript pinned to bottom?
   const llmToastSeqRef = React.useRef<Set<number>>(new Set());
   const chatStatusRequestRef = React.useRef(0);
@@ -1064,36 +1061,42 @@ export function SessionsTab({ taskId }: { taskId: string }) {
     };
   }, [taskId, patchStore, t]);
 
-  // Fallback transcript poll — runs ONLY while the SSE stream is down. SSE is the
-  // sole live source for the active session's transcript (steps + the human turn),
-  // so when the stream never connects or gets buffered/dropped by an intermediary
-  // (a reverse proxy that holds text/event-stream, a flaky link), newly sent
-  // messages and their replies stay invisible until a manual refresh re-runs the
-  // history fetch. This mirrors the chat console (which stays live via polling):
-  // every 2s it re-fetches the active session's latest page and merges it, so the
-  // transcript advances without a reload. It is inert whenever sseLive is true, so
-  // the healthy SSE path carries no extra load.
+  // Reconcile the active transcript with persisted history even when SSE is open.
+  // onopen confirms the connection, not delivery: a proxy can buffer frames and
+  // a lossy broadcast can miss individual events without closing the stream.
+  // SSE still supplies immediate updates; history repairs gaps every 5s (2s when
+  // disconnected). Merge the entire page, not just IDs above a high-water mark:
+  // a missing message can precede a newer event already received over SSE.
   React.useEffect(() => {
-    if (sseLive) return;
+    if (MOCK) return;
     let alive = true;
     let timer: ReturnType<typeof setTimeout>;
+    const interval = sseLive ? 5000 : 2000;
     const poll = async () => {
       const key = activeKeyRef.current;
       try {
         const r = await api.activityHistory(taskId, key, 0, PAGE);
         if (!alive) return;
-        const maxSeq = r.items.reduce((m, a) => Math.max(m, a.seq), -1);
-        if (maxSeq > (fallbackMaxRef.current[key] ?? -1)) {
-          fallbackMaxRef.current[key] = maxSeq;
-          patchStore(key, (s) => ({ ...s, items: mergeBySeq(s.items, r.items) }));
-        }
+        patchStore(key, (s) => {
+          const items = mergeBySeq(s.items, r.items);
+          return {
+            ...s,
+            items,
+            loaded: true,
+            loading: false,
+            error: undefined,
+            hasMore: s.loaded ? s.hasMore : r.hasMore,
+            earliestSeq: items[0]?.seq ?? 0,
+            lastTs: items.at(-1)?.ts ?? s.lastTs,
+          };
+        });
       } catch {
         // best-effort; the next tick retries, and SSE reconnection compensates.
       } finally {
-        if (alive) timer = setTimeout(() => void poll(), 2000);
+        if (alive) timer = setTimeout(() => void poll(), interval);
       }
     };
-    timer = setTimeout(() => void poll(), 2000);
+    timer = setTimeout(() => void poll(), interval);
     return () => {
       alive = false;
       clearTimeout(timer);

@@ -82,7 +82,7 @@ func isTaskLLMChainExhausted(err error) bool {
 // network failure, or 5xx does not rotate providers; the response must explicitly
 // identify quota, credits, billing balance, or payment exhaustion.
 func isQuotaExhaustedError(err error) bool {
-	return err != nil && agent.IsQuotaExhaustedMessage(err.Error())
+	return err != nil && !agent.IsSubscriptionLimit(err) && agent.IsQuotaExhaustedMessage(err.Error())
 }
 
 type taskLLMSelection struct {
@@ -90,12 +90,14 @@ type taskLLMSelection struct {
 	profileID int64
 	revision  int64
 	provider  llm.Provider
+	config    agent.Config
 	// retry 是这次选中的配置解析出来的重试参数(profile 覆盖 → 全局策略 → 内置默认)。
 	// 同 provider 安全窗口重试按它走,所以换了 profile 就换一套重试节奏。
 	retry agent.RetryConfig
 }
 
 type taskLLMStreamHooks struct {
+	wait       func(taskLLMSelection, error) error
 	current    func() (taskLLMSelection, error)
 	exhaust    func(taskLLMSelection, error) (db.TaskLLMTransition, error)
 	transition func(taskLLMSelection, db.TaskLLMTransition, error)
@@ -120,10 +122,15 @@ func (r *taskLLMRuntime) current() (taskLLMSelection, error) {
 		return taskLLMSelection{}, fmt.Errorf("task %s not found", r.taskID)
 	}
 	r.s.syncTaskLLMState(pt)
+	if waiting, waitErr := r.s.m.pg.HasSubscriptionWait(taskNum); waitErr != nil {
+		return taskLLMSelection{}, &taskLLMError{taskID: r.taskID, cause: waitErr}
+	} else if waiting {
+		return taskLLMSelection{}, &agent.SubscriptionWaiting{}
+	}
 	t, _ := r.s.m.Task(r.taskID)
 	sel := taskLLMSelection{task: t, revision: pt.LLMChainRevision}
 	if prov, cfg, ok := r.s.agentBindingProvider(r.agentKey); ok {
-		sel.provider, sel.retry = prov, cfg.Retry
+		sel.provider, sel.retry, sel.config = prov, cfg.Retry, cfg
 		return sel, nil
 	}
 	if len(pt.LLMProfileIDs) > 0 {
@@ -135,14 +142,14 @@ func (r *taskLLMRuntime) current() (taskLLMSelection, error) {
 		if !ok {
 			return sel, fmt.Errorf("LLM profile #%d is missing or invalid", sel.profileID)
 		}
-		sel.provider, sel.retry = prov, cfg.Retry
+		sel.provider, sel.retry, sel.config = prov, cfg.Retry, cfg
 		return sel, nil
 	}
 	prov, cfg, ok := r.s.globalProvider()
 	if !ok {
 		return sel, fmt.Errorf("task %s has no available fallback LLM provider", r.taskID)
 	}
-	sel.provider, sel.retry = prov, cfg.Retry
+	sel.provider, sel.retry, sel.config = prov, cfg.Retry, cfg
 	return sel, nil
 }
 
@@ -202,6 +209,7 @@ func parseTaskID(id string) (int64, error) {
 func (r *taskLLMRuntime) streamHooks() taskLLMStreamHooks {
 	return taskLLMStreamHooks{
 		current: r.current,
+		wait:    r.waitForSubscription,
 		exhaust: func(selection taskLLMSelection, cause error) (db.TaskLLMTransition, error) {
 			taskNum, _ := parseTaskID(r.taskID)
 			transition, err := r.s.m.pg.MarkTaskLLMProfileQuotaExhaustedAtRevision(taskNum, selection.profileID, selection.revision, cause.Error())
@@ -265,6 +273,12 @@ func completeTaskLLM(ctx context.Context, taskID string, req llm.CompletionReque
 		}
 		if callErr == nil {
 			return msg, sr, usage, nil
+		}
+		if agent.IsSubscriptionLimit(callErr) {
+			if hooks.wait != nil {
+				callErr = hooks.wait(selection, callErr)
+			}
+			return llm.Message{}, "", usage, callErr
 		}
 		// profileID=0: 显式链已被清空;非额度错误:透传。二者都不改任务 failover 状态。
 		if selection.profileID == 0 || !isQuotaExhaustedError(callErr) {
@@ -346,6 +360,13 @@ func streamTaskLLM(ctx context.Context, taskID string, req llm.CompletionRequest
 				return
 			}
 			// profileID=0 means the explicit chain was cleared while this stable task
+			if agent.IsSubscriptionLimit(streamErr) {
+				if hooks.wait != nil {
+					streamErr = hooks.wait(selection, streamErr)
+				}
+				yield(llm.StreamEvent{}, streamErr)
+				return
+			}
 			// bundle was still in use. Agent/global fallback errors follow the legacy
 			// behavior and never mutate task failover state.
 			if selection.profileID == 0 || !isQuotaExhaustedError(streamErr) {
@@ -432,7 +453,7 @@ func isRetryableStreamError(err error) bool {
 	if err == nil {
 		return false
 	}
-	if isQuotaExhaustedError(err) {
+	if isQuotaExhaustedError(err) || agent.IsSubscriptionLimit(err) || agent.NeedsToolReview(err) {
 		return false
 	}
 	s := strings.ToLower(err.Error())

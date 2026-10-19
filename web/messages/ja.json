@@ -206,6 +206,7 @@
       "skipped": "スキップ"
     },
     "engine": {
+      "quota_wait": "サブスクリプション上限の回復待ち",
       "exploring": "探索中",
       "idle": "アイドル",
       "paused": "一時停止",

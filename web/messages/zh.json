@@ -206,6 +206,7 @@
       "skipped": "已跳过"
     },
     "engine": {
+      "quota_wait": "等待订阅额度恢复",
       "exploring": "探索中",
       "idle": "空闲",
       "paused": "已暂停",

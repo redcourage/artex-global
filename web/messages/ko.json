@@ -206,6 +206,7 @@
       "skipped": "건너뜀"
     },
     "engine": {
+      "quota_wait": "구독 한도 회복 대기",
       "exploring": "탐색 중",
       "idle": "유휴",
       "paused": "일시정지",

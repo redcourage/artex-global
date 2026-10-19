@@ -12,7 +12,7 @@ import os
 from pathlib import Path
 
 
-from protocol import ProtocolError, ServiceUnavailable, SessionConflict
+from protocol import ProtocolError, ServiceUnavailable, SessionConflict, SubscriptionLimit
 from app_server import AppServer
 
 
@@ -34,6 +34,8 @@ async def serve_client(reader, writer, bridge, token):
             status, payload = 401, {'error': {'message': 'Unauthorized'}}
         elif method == 'GET' and path == '/v1/models':
             payload = await bridge.app.models()
+        elif method == 'GET' and path == '/v1/quota':
+            payload = await bridge.app.quota_status()
         elif method != 'POST' or path != '/v1/chat/completions':
             status, payload = 404, {'error': {'message': 'Unsupported endpoint'}}
         else:
@@ -59,6 +61,10 @@ async def serve_client(reader, writer, bridge, token):
         message = str(exc) if isinstance(exc, ProtocolError) else ('Invalid HTTP request' if status == 400 else 'Bridge internal error')
         bridge.app.log('http_error', status=status, reason=type(exc).__name__)
         payload = {'error': {'message': message}}
+        if isinstance(exc, ProtocolError) and hasattr(exc, 'code'):
+            payload['error']['code'] = exc.code
+        if isinstance(exc, SubscriptionLimit):
+            payload['error'].update(code='codex_subscription_limit', retry_at=exc.retry_at)
         if hasattr(exc, 'artex_usage'):
             payload['artex_usage'] = exc.artex_usage
     try:

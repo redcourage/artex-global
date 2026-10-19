@@ -206,6 +206,7 @@
       "skipped": "Omitido"
     },
     "engine": {
+      "quota_wait": "Esperando cuota de suscripción",
       "exploring": "Explorando",
       "idle": "Inactivo",
       "paused": "En pausa",

@@ -43,6 +43,7 @@ func (sc *Scheduler) Run(ctx context.Context) {
 		return
 	}
 	sc.init()
+	go sc.s.runSubscriptionRecovery(ctx)
 	t := time.NewTicker(sc.tick)
 	defer t.Stop()
 	for {

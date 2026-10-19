@@ -1384,3 +1384,14 @@ CREATE INDEX IF NOT EXISTS idx_notification_deliveries_batch
     ON notification_deliveries(batch_id) WHERE batch_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_notification_deliveries_channel
     ON notification_deliveries(channel_id, id DESC);
+
+-- Codex subscription waits survive restarts independently of user pause/status.
+CREATE TABLE IF NOT EXISTS task_subscription_waits (
+    task_id BIGINT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    agent_key TEXT NOT NULL,
+    fingerprint TEXT NOT NULL,
+    revision BIGSERIAL NOT NULL,
+    next_check TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY(task_id, agent_key)
+);
+ALTER TABLE task_subscription_waits ADD COLUMN IF NOT EXISTS profile_id BIGINT NOT NULL DEFAULT 0;

@@ -47,6 +47,12 @@ var reasonHint = map[harness.TerminalReason]string{
 // terminalText renders a terminal event with no final text into a compact summary
 // and a Markdown detail block.
 func terminalText(ctx context.Context, term *harness.Terminal, tr *runTrace) (string, string) {
+	if IsSubscriptionLimit(term.Err) {
+		return SubscriptionWaitMessage, SubscriptionWaitMessage
+	}
+	if NeedsToolReview(term.Err) {
+		return "도구 실행 결과 검토가 필요하여 작업을 일시정지했습니다.", term.Err.Error()
+	}
 	reason := term.Reason
 	aborted := reason == harness.ReasonAbortedStreaming || reason == harness.ReasonAbortedTools
 	// Prompt may return ctx.Err directly without a terminal event. Preserve the

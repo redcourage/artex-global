@@ -1110,8 +1110,17 @@ func (s *Server) stats(w http.ResponseWriter, r *http.Request) {
 	}
 	last := s.engine.LastActivity(t.ID)
 	paused := s.engine.IsPaused(t.ID)
+	waiting := s.engine.subscriptionWaiting(t.ID)
+	if isTerminalStatus(t.lifecycleSnapshot().Status) {
+		waiting = false
+	}
+	if n, err := parseTaskID(t.ID); err == nil && s.m.pg != nil {
+		if waits, err := s.m.pg.SubscriptionWaits(n); err == nil {
+			out["subscription_waits"] = waits
+		}
+	}
 	activeCalls := s.engine.ActiveLLMCalls(t.ID)
-	running := s.engine.ReadyFor(t) && s.engine.Started(t.ID) && !paused
+	running := s.engine.ReadyFor(t) && s.engine.Started(t.ID) && !paused && !waiting
 	// A live event-driven engine with no work is healthy idle. Only a persisted
 	// running intent without any corresponding LLM call can be considered stalled.
 	stalled := running && activeCalls == 0 && inFlight > 0 && last > 0 && time.Now().Unix()-last > 120
@@ -1121,6 +1130,8 @@ func (s *Server) stats(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case paused:
 		engineMode = "paused"
+	case waiting:
+		engineMode = "quota_wait"
 	case stalled:
 		engineMode = "stalled"
 	case running && activeCalls > 0:

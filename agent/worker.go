@@ -503,11 +503,23 @@ func (w *Worker) execute(ctx context.Context, name string, taskID int64, as *db.
 	// restarting from scratch.
 	alreadyRecorded := false
 	if w.tx != nil {
-		_ = s.Resume(opts.SessionID)
+		if message == "" {
+			records, loadErr := w.tx.Load(w.tx.MainPath(opts.SessionID))
+			if loadErr != nil {
+				return harness.ReasonModelError, tsx.Writes(), fmt.Errorf("read worker transcript: %w", loadErr)
+			}
+			history, _ := transcript.Messages(records)
+			if resumeErr := SafeToolResume(history); resumeErr != nil {
+				return harness.ReasonModelError, tsx.Writes(), resumeErr
+			}
+		}
+		if resumeErr := s.Resume(opts.SessionID); resumeErr != nil {
+			return harness.ReasonModelError, tsx.Writes(), resumeErr
+		}
 		alreadyRecorded = requestID != "" && hasWorkerChatMessage(s.Messages(), requestID)
 		if len(s.Messages()) > 0 && message == "" {
 			seedUnlockFromHistory(s.Messages(), def.UnlockSkill)
-			input = "继续执行。"
+			input = AutomaticContinuation
 		} else if len(s.Messages()) > 0 {
 			seedUnlockFromHistory(s.Messages(), def.UnlockSkill)
 		}

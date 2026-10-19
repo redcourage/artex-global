@@ -32,6 +32,47 @@ class Peer(FakeApp):
 
 
 class RecoveryTests(unittest.IsolatedAsyncioTestCase):
+    async def test_chat_resume_after_tool_roundtrip_keeps_same_thread(self):
+        class ChatPeer(Peer):
+            async def rpc(self, method, params):
+                if method == 'turn/start' and not self.sent:
+                    self.calls.append((method, params))
+                    state = self.sessions[params['threadId']]
+                    state.pending['read-1'] = 1
+                    await state.events.put({'kind': 'tool', 'id': 'read-1', 'name': 'Read',
+                                            'arguments': {'file_path': '/tmp/fixture'}})
+                    return {'turn': {'id': 'first'}}
+                return await super().rpc(method, params)
+
+            async def send(self, message):
+                await super().send(message)
+                state = next(iter(self.sessions.values()))
+                state.active_turn = None
+                await state.events.put({'kind': 'text', 'text': 'remembered 42'})
+
+        app = ChatPeer()
+        bridge = Bridge(app)
+        self.addAsyncCleanup(bridge.close)
+        request = body([{'role': 'user', 'content': 'read and remember 42'}])
+        call = await bridge.complete('conv-1', request)
+        request['messages'] += [call['choices'][0]['message'],
+                                {'role': 'tool', 'tool_call_id': 'read-1', 'content': '42'}]
+        answer = await bridge.complete('conv-1', request)
+        self.assertEqual(answer['choices'][0]['message']['content'], 'remembered 42')
+        request['messages'].append(answer['choices'][0]['message'])
+        thread = bridge.states['conv-1'].thread
+        # Norma persists tool inputs as json.RawMessage. Go's transcript writer
+        # compacts it, so Resume sends compact JSON instead of the original spaces.
+        request['messages'][1]['tool_calls'][0]['function']['arguments'] = '{"file_path":"/tmp/fixture"}'
+        for text in ('what number?', 'continue again'):
+            request['messages'].append({'role': 'user', 'content': text})
+            result = await bridge.complete('conv-1', request)
+            self.assertEqual(result['choices'][0]['message']['content'], 'answer')
+            request['messages'].append(result['choices'][0]['message'])
+            self.assertEqual(bridge.states['conv-1'].thread, thread)
+        self.assertEqual(len(app.sent), 1)  # The historical Read was not re-executed.
+        self.assertEqual(sum(method == 'thread/start' for method, _ in app.calls), 1)
+
     async def test_recovery_replay_ends_when_new_work_is_exposed(self):
         class WriteReadPeer(Peer):
             async def rpc(self, method, params):

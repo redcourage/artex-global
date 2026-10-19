@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>로컬 모드 검색 흐름</title>
+<style>
+:root{--bg:#f7f8f4;--paper:#fff;--ink:#203c36;--muted:#65766e;--line:#dde5dc;--green:#226649;--mint:#e6f2e9;--amber:#865827;--sand:#fff2d8;--violet:#625484;--lav:#f0edf9;--blue:#3c657e;--sky:#e4eef5;--red:#a2513b;--rose:#fbe9e3}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 -apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',sans-serif;word-break:keep-all;overflow-wrap:anywhere}
+main{max-width:1180px;margin:0 auto;padding:28px 16px 64px}
+a{color:var(--green)}
+h1{font-size:30px;line-height:1.3;margin:6px 0 10px;letter-spacing:-.01em}
+h2{font-size:22px;line-height:1.35;margin:4px 0 6px}
+h3{font-size:15px;margin:0}
+p{margin:0}
+.eyebrow{font-size:12px;letter-spacing:.08em;color:var(--muted);font-weight:650}
+.lead{color:var(--muted);max-width:760px}
+.back{font-size:13px;display:inline-block;margin-bottom:14px}
+section{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:22px;margin-top:22px}
+.sec-sub{color:var(--muted);font-size:14px;margin-bottom:16px;max-width:820px}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{display:inline-flex;align-items:center;gap:5px;border:1px solid;border-radius:8px;padding:3px 9px;font-size:13px;line-height:1.45;white-space:nowrap;transition:opacity .25s,box-shadow .25s,transform .25s}
+.chip.plain{background:var(--sand);border-color:#e3c48d;color:var(--amber)}
+.chip.aes{background:var(--mint);border-color:#a9cdb5;color:var(--green)}
+.chip.fhe{background:var(--sky);border-color:#a8c3d6;color:var(--blue)}
+.chip.key{background:var(--lav);border-color:#b9aed6;color:var(--violet)}
+.chip.id{background:#f1f3ef;border-color:#cdd6cc;color:var(--ink)}
+.chip.none{background:transparent;border-style:dashed;border-color:var(--line);color:var(--muted)}
+.chip.wrap{white-space:normal}
+
+/* ① stepper */
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:14px}
+.controls button{font:inherit;font-size:13px;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:5px 12px;cursor:pointer}
+.controls button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.controls .nav{margin-left:auto;display:flex;gap:6px}
+.controls .nav button{border-radius:8px}
+.flow{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+.stage{display:grid;grid-template-columns:190px minmax(0,1fr);gap:12px}
+.zone{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fbfcfa;transition:border-color .25s,background .25s;min-width:0}
+.zone.active{border-color:var(--ink);background:#fff;box-shadow:0 0 0 1px var(--ink)}
+.zone-h{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;letter-spacing:.02em}
+.zone.active .zone-h{color:var(--ink)}
+.host{border:2px dashed #b9c6bb;border-radius:14px;padding:12px;min-width:0}
+.host-h{font-weight:700;font-size:14px;margin-bottom:10px}
+.host-h span{display:block;font-weight:500;font-size:12px;color:var(--muted)}
+.host-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:10px}
+.host-grid .disk{grid-column:1/-1}
+.slot{margin-bottom:9px}
+.slot:last-child{margin-bottom:0}
+.lbl{display:block;font-size:11.5px;color:var(--muted);margin-bottom:3px}
+.slot .chips{display:flex;flex-wrap:wrap;gap:5px}
+.vt{width:100%;border-collapse:collapse;font-size:13px}
+.vt th{font-size:11px;color:var(--muted);font-weight:600;text-align:left;padding:2px 4px;border-bottom:1px solid var(--line)}
+.vt td{padding:4px;border-bottom:1px solid #eef2ed;vertical-align:middle}
+.vt tr{transition:background .25s}
+.vt tr.pick{background:#fff8e6}
+.files{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.file{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px;min-width:0}
+.file b{font-size:12.5px;display:block}
+.file small{display:block;color:var(--muted);font-size:11px;margin-bottom:6px;word-break:break-all}
+.file .chips{display:flex;flex-direction:column;align-items:flex-start;gap:5px}
+.file.warn{border-color:#d8b9b0;background:var(--rose)}
+[data-s].hide{visibility:hidden}
+.stage.focus [data-h]:not(.hl){opacity:.5}
+.hl{box-shadow:0 0 0 2px var(--ink);transform:translateY(-1px);opacity:1!important}
+.caption{border:1px solid var(--line);border-radius:12px;padding:16px;background:#fff;position:sticky;top:12px}
+.caption .n{font-size:12px;color:var(--muted);font-weight:650}
+.caption h3{font-size:18px;margin:2px 0 8px}
+.caption .path{font-size:12px;color:var(--blue);background:var(--sky);border-radius:6px;padding:4px 8px;display:inline-block;margin-bottom:10px}
+.caption dl{margin:12px 0 0;display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:13px}
+.caption dt{color:var(--muted);white-space:nowrap}
+.caption dd{margin:0}
+.caption .m1{margin-top:12px;font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
+.why{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;font-size:12.5px}
+.why svg{display:block;margin:6px auto}
+.why[hidden]{display:none}
+
+/* ② three lanes */
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.tabs button{font:inherit;font-size:13px;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:5px 14px;cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.q{font-size:14px;margin-bottom:12px}
+.q b{background:var(--sand);padding:1px 6px;border-radius:5px}
+.lanes{display:grid;grid-template-columns:120px repeat(3,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.lanes>div{padding:10px;border-bottom:1px solid var(--line);border-left:1px solid var(--line);min-width:0}
+.lanes>div:nth-child(4n+1){border-left:0;background:#f5f7f2;font-size:12px;font-weight:650;color:var(--muted)}
+.lanes .ph{background:#f5f7f2;font-weight:700;font-size:14px}
+.lanes .ph small{display:block;font-weight:500;font-size:11.5px;color:var(--muted)}
+.lanes .cell{display:flex;flex-direction:column;align-items:flex-start;gap:5px}
+.lanes .last{border-bottom:0}
+.lanes .keyrow .chip{white-space:normal}
+.lanes .keyrow.warn{background:var(--rose)}
+.takeaway{margin-top:12px;font-size:14px;background:#f5f7f2;border-radius:10px;padding:12px 14px}
+
+/* ③ breach */
+.verdicts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
+.vcard{border:1px solid var(--line);border-top:4px solid #ccc;border-radius:12px;padding:14px;min-width:0}
+.vcard .who{font-size:12px;color:var(--muted);font-weight:650}
+.vcard .v{font-size:18px;font-weight:750;margin:4px 0 6px}
+.vcard p{font-size:13.5px}
+.vcard.bad{border-top-color:var(--red)}.vcard.bad .v{color:var(--red)}
+.vcard.good{border-top-color:#438465}.vcard.good .v{color:#2f6f50}
+.vcard.cond{border-top-color:#b4974c}.vcard.cond .v{color:#8a6f2a}
+.note{font-size:13px;color:var(--muted);margin-top:12px}
+
+/* ④ summary */
+.sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.sum div{border:1px solid var(--line);border-radius:12px;padding:14px;min-width:0}
+.sum h3{margin-bottom:6px}
+.sum p{font-size:13.5px}
+footer{font-size:12px;color:var(--muted);margin-top:22px;line-height:1.7}
+
+@media(max-width:1000px){
+  .flow{grid-template-columns:1fr}
+  .caption{position:static}
+}
+@media(max-width:760px){
+  h1{font-size:24px}
+  section{padding:16px}
+  .stage{grid-template-columns:1fr}
+  .host-grid{grid-template-columns:1fr}
+  .files{grid-template-columns:1fr}
+  .controls .nav{margin-left:0;width:100%}
+  .controls .nav button{flex:1}
+  .lanes{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .lanes>div:nth-child(4n+1){grid-column:1/-1;border-left:0;padding:6px 10px}
+  .lanes>div:nth-child(4n+2){border-left:0}
+  .lanes .corner{display:none}
+  .verdicts,.sum{grid-template-columns:1fr}
+  .chip{white-space:normal}
+}
+.links{display:flex;flex-wrap:wrap;gap:8px;font-size:13px;margin-bottom:16px}.links a{padding:4px 8px}
+</style>
+</head>
+<body>
+<main>
+<nav class="links" aria-label="상세 이해 페이지"><a href="artex-lab-board.html#localflow" target="_top">Heracles</a><a href="artex-lab-board.html#pgflow" target="_top">PostgreSQL + pg_tde</a><a href="artex-lab-board.html#mongoflow" target="_top">MongoDB QE</a><a href="artex-lab-board.html#candidates" target="_top">오픈소스 비교 후보</a></nav>
+<a class="back" href="artex-lab-board.html#comparison" target="_top">비교·데모 초안 보기 →</a>
+<div class="eyebrow">LOCAL / MVP MODE · 개념 시각화</div>
+<h1>로컬 모드에서 ‘당뇨’ 검색을 따라가 봅니다</h1>
+<p class="lead">이 페이지는 Oracle 바인딩의 로컬(MVP) 모드를 예로 듭니다. 실제 평가할 DB 바인딩·버전은 아직 미정입니다. AES 값 암호화를 켜고 키 파일·FHE 인덱스·DB를 <b>같은 DB 호스트</b>에 둔 구성을 가정합니다. 같은 3명 데이터로 ① Heracles 내부 흐름, ② 세 제품의 평문 위치, ③ 침해 시 결과 순서로 봅니다.</p>
+<div class="legend" aria-label="색 범례">
+  <span class="chip plain">평문</span>
+  <span class="chip aes">AES 암호문 · 태그</span>
+  <span class="chip fhe">FHE 암호문</span>
+  <span class="chip key">키</span>
+  <span class="chip id">행 ID · 결과 메타데이터</span>
+</div>
+
+<!-- ① -->
+<section id="inside">
+  <div class="eyebrow">① HERACLES 내부</div>
+  <h2>검색은 인덱스에서 일치 여부를 판정하고, ID로 원본 행을 찾습니다</h2>
+  <p class="sec-sub">단계를 넘기면 그 단계에서 쓰이는 칸이 강조됩니다. 숫자(2.00·0.41)와 칸 배치는 설명용이며 실측이 아닙니다. 초기 적재·갱신 경로는 별도로 봅니다. 실제 암호문 형식과 판정 기준은 enWord 프리셋(기본 <code>ENWORD_V2L1_W</code>)이 정합니다.</p>
+
+  <div class="controls" role="group" aria-label="단계 선택">
+    <span id="stepBtns" style="display:flex;flex-wrap:wrap;gap:6px"></span>
+    <span class="nav"><button id="prev">← 이전</button><button id="next">다음 →</button></span>
+  </div>
+
+  <div class="flow">
+    <div class="stage focus" id="stage">
+      <div class="zone" data-zone="app">
+        <div class="zone-h">앱 / 사용자</div>
+        <div class="slot"><span class="lbl">보내는 질의</span>
+          <div class="chips"><span class="chip plain" data-s="1-7" data-h="1">진단 = ‘당뇨’</span></div></div>
+        <div class="slot"><span class="lbl">받는 결과</span>
+          <div class="chips">
+            <span class="chip aes wrap" data-s="6-6" data-h="6">행 101 · 103<br>(진단은 암호문)</span>
+            <span class="chip plain wrap" data-s="7-7" data-h="7">가 · 당뇨<br>다 · 당뇨</span>
+          </div></div>
+      </div>
+
+      <div class="host">
+        <div class="host-h">DB 서버 (한 대)<span>로컬 모드: 아래 모든 것이 같은 서버 안에 있음</span></div>
+        <div class="host-grid">
+          <div class="zone" data-zone="ora">
+            <div class="zone-h">Oracle 서버 프로세스</div>
+            <div class="slot"><span class="lbl">SQL 문</span>
+              <div class="chips"><span class="chip plain" data-s="1-7" data-h="1">‘당뇨’</span></div></div>
+            <div class="slot"><span class="lbl">값 테이블 / 조회 처리 · 메모리 개념도</span>
+              <table class="vt" aria-label="값 테이블">
+                <thead><tr><th>ID</th><th>고객</th><th>진단</th></tr></thead>
+                <tbody>
+                  <tr data-row="101"><td>101</td><td>가</td><td><span class="chip aes">9f3a…</span> <span class="chip plain" data-s="7-7" data-h="7">당뇨</span></td></tr>
+                  <tr data-row="102"><td>102</td><td>나</td><td><span class="chip aes">41c8…</span></td></tr>
+                  <tr data-row="103"><td>103</td><td>다</td><td><span class="chip aes">7d02…</span> <span class="chip plain" data-s="7-7" data-h="7">당뇨</span></td></tr>
+                </tbody>
+              </table></div>
+          </div>
+
+          <div class="zone" data-zone="ext">
+            <div class="zone-h">extproc 에이전트 · libheracles.so</div>
+            <div class="slot"><span class="lbl">메모리에 올린 키</span>
+              <div class="chips">
+                <span class="chip key" data-s="2-7" data-h="4">FHE 비밀키</span>
+                <span class="chip key" data-s="2-7" data-h="7">AES 키</span>
+              </div></div>
+            <div class="slot"><span class="lbl">검색어 → 글자별 각도</span>
+              <div class="chips"><span class="chip plain" data-s="2-4" data-h="2">당 → θ₁ · 뇨 → θ₂</span></div></div>
+            <div class="slot"><span class="lbl">불러온 인덱스 (진단 컬럼만)</span>
+              <div class="chips">
+                <span class="chip fhe" data-s="2-7" data-h="2,3">토큰₁ 🔒</span>
+                <span class="chip fhe" data-s="2-7" data-h="2,3">토큰₂ 🔒</span>
+              </div></div>
+            <div class="slot"><span class="lbl">동형 비교 결과</span>
+              <div class="chips">
+                <span class="chip fhe" data-s="3-7" data-h="3">점수₁ 🔒</span>
+                <span class="chip fhe" data-s="3-7" data-h="3">점수₂ 🔒</span>
+              </div></div>
+            <div class="slot"><span class="lbl">점수만 복호 → 판정</span>
+              <div class="chips">
+                <span class="chip plain" data-s="4-7" data-h="4">예시: 토큰₁ = 2.00 ✓</span>
+                <span class="chip plain" data-s="4-7" data-h="4">예시: 토큰₂ = 0.41 ✗</span>
+              </div></div>
+            <div class="slot"><span class="lbl">일치한 행 ID</span>
+              <div class="chips"><span class="chip id" data-s="5-7" data-h="5">101 · 103</span></div></div>
+            <div class="slot"><span class="lbl">AES 복호 (decrypt 호출 시)</span>
+              <div class="chips"><span class="chip plain" data-s="7-7" data-h="7">‘당뇨’ × 2</span></div></div>
+          </div>
+
+          <div class="zone disk" data-zone="disk">
+            <div class="zone-h">디스크</div>
+            <div class="files">
+              <div class="file"><b>값 테이블 데이터 파일</b><small>Oracle 데이터 파일</small>
+                <div class="chips">
+                  <span class="chip aes" data-h="0">101 · 9f3a…</span>
+                  <span class="chip aes" data-h="0">102 · 41c8…</span>
+                  <span class="chip aes" data-h="0">103 · 7d02…</span>
+                </div></div>
+              <div class="file"><b>FHE 검색 인덱스</b><small>data_dir/idx/columns/진단/enword_db.bin</small>
+                <div class="chips">
+                  <span class="chip fhe" data-h="0,2">토큰₁ 🔒 → 행 101 · 103</span>
+                  <span class="chip fhe" data-h="0,2">토큰₂ 🔒 → 행 102</span>
+                </div></div>
+              <div class="file warn"><b>키 파일 ⚠ 같은 호스트</b><small>set_config로 지정한 경로</small>
+                <div class="chips">
+                  <span class="chip key" data-h="0,2">secret.key (FHE 비밀키)</span>
+                  <span class="chip key" data-h="0,2">aes256.key (AES 키)</span>
+                </div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="caption" aria-live="polite">
+      <div class="n" id="capN"></div>
+      <h3 id="capT"></h3>
+      <div class="path" id="capPath"></div>
+      <p id="capW"></p>
+      <dl>
+        <dt>평문이 있는 곳</dt><dd id="capP"></dd>
+        <dt>쓰인 키</dt><dd id="capK"></dd>
+      </dl>
+      <div class="why" id="why" hidden>
+        <b>2점 예시의 의미 · 아래 각도 그림은 직관용 모형</b>
+        <svg width="190" height="110" viewBox="0 0 190 110" role="img" aria-label="글자를 원 위의 각도로 바꾼 그림">
+          <circle cx="55" cy="55" r="42" fill="none" stroke="#c9d4cb"/>
+          <line x1="55" y1="55" x2="91" y2="34" stroke="#3c657e" stroke-width="2.5"/>
+          <line x1="55" y1="55" x2="22" y2="81" stroke="#3c657e" stroke-width="2.5"/>
+          <line x1="55" y1="55" x2="91" y2="34" stroke="#865827" stroke-width="1.5" stroke-dasharray="3 3"/>
+          <line x1="55" y1="55" x2="22" y2="81" stroke="#865827" stroke-width="1.5" stroke-dasharray="3 3"/>
+          <text x="95" y="32" font-size="11" fill="#203c36">당 θ₁</text>
+          <text x="4" y="98" font-size="11" fill="#203c36">뇨 θ₂</text>
+          <text x="112" y="58" font-size="11" fill="#65766e">cos 0 = 1</text>
+          <text x="112" y="74" font-size="11" fill="#65766e">+ cos 0 = 1</text>
+          <text x="112" y="92" font-size="12" font-weight="700" fill="#203c36">= 2</text>
+        </svg>
+        <b>확인한 근거:</b> heracles_config.h 주석은 Exact 일치 점수를 검색어의 코드포인트 수로 설명합니다. ‘당뇨’는 이 예시에서 2입니다. 실제 판정에는 프리셋·정밀도 허용 범위가 관여합니다.<br><b>확인하지 않은 부분:</b> 각도·cos 합산 그림은 그 점수를 이해시키는 직관용 모형이며, 미열람 enWord 내부 연산을 재현하거나 검증한 도식이 아닙니다. 0.41도 임의의 설명용 숫자입니다.
+      </div>
+      <div class="m1" id="capM"></div>
+    </aside>
+  </div>
+</section>
+
+<!-- ② -->
+<section id="lanes">
+  <div class="eyebrow">② 세 제품 · 로컬 키를 쓰는 별도 실험 구성</div>
+  <h2>같은 일을 할 때, 평문은 어디에 있나</h2>
+  <p class="sec-sub">이 페이지의 별도 가정: Heracles는 DB 호스트의 키 파일, pg_tde는 로컬 키링, QE는 앱 쪽 로컬 마스터 키를 사용합니다. 기본 비교 보드의 외부 키 제공자 구성과 구분하세요. pg_tde 로컬 키링은 개발·시험용이며, QE 공식 문서는 운영 환경에서 원격 KMS를 요구합니다. 키 위치를 바꾸면 침해 시 예상도 달라집니다.</p>
+  <div class="tabs" role="group" aria-label="시점 선택" id="momentTabs"></div>
+  <div class="q" id="momentQ"></div>
+  <div class="lanes" id="lanesGrid"></div>
+  <div class="takeaway" id="momentTake"></div>
+</section>
+
+<!-- ③ -->
+<section id="breach">
+  <div class="eyebrow">③ 침해 시나리오 · 코드·문서 기반 예상, 실험 전</div>
+  <h2>무엇이 털리면, 진단 값이 읽히나</h2>
+  <p class="sec-sub">시나리오를 고르면 세 구성의 예상 결과가 바뀝니다. 앱 호스트는 안전하다고 가정합니다.</p>
+  <div class="tabs" role="group" aria-label="침해 시나리오" id="breachTabs"></div>
+  <div class="verdicts" id="verdicts"></div>
+  <p class="note">Mode 1은 다른 배포 경계입니다. 외부 키가 없고 KMS에도 접근할 수 없는 오프라인 파일 사본에서는 보호를 기대할 수 있습니다. 그러나 함께 유출된 자격증명이나 살아 있는 데몬/KMS 호출 권한까지 평가해야 합니다. 키 분리만으로 호스트 장악 후 평문 보호가 확정되지는 않습니다.</p>
+</section>
+
+<!-- ④ -->
+<section id="summary">
+  <div class="eyebrow">④ 정리</div>
+  <h2>로컬 모드 Heracles는 어디에 서 있나</h2>
+  <div class="sum">
+    <div><h3>pg_tde와 비교할 차이</h3><p>AES 컬럼을 그대로 읽는 조회·테이블 덤프에서는 암호문이 유지될 수 있고, FHE 검색은 원본 컬럼을 풀지 않는 경로입니다. 다만 INSERT·인덱스 생성·decrypt 조회에서는 DB 쪽 평문이 생길 수 있습니다. 데이터와 로컬 키 파일을 모두 확보한 조건은 별도로 시험해야 합니다.</p></div>
+    <div><h3>MongoDB QE와 비교할 경계</h3><p>QE 보호 필드는 앱/드라이버에서 복호화하고, Local Heracles는 DB 호스트에 비밀키와 평문 검색어가 있습니다. QE도 지속 침해나 스냅샷·질의 정보의 결합 관측을 포괄적으로 보장하지는 않습니다. 검색 기능과 SQL 통합성은 각 DB 바인딩·버전의 실제 지원 범위로 별도 비교합니다.</p></div>
+    <div><h3>아직 확인할 것</h3><p>FHE 인덱스 파일만 보고 ‘서로 다른 값이 몇 개인지’, ‘값마다 몇 행인지’를 알 수 있는지는 enWord 엔진 소스로 확인해야 합니다. 어느 컬럼이 검색됐는지와 결과 건수는 서버가 압니다. 이 점은 Heracles 문서에 명시돼 있습니다.</p></div>
+  </div>
+</section>
+
+<footer>
+근거 · Heracles <code>145caef</code>: <code>docs/internal/spec/overview.md</code> §1.2·§1.3·§3.2, <code>spec/architecture.md</code> §1.3, <code>spec/oracle/sequence-flow.md</code> §3, <code>oracle/src/heracles_adapter.cpp</code>(<code>searchWithSecret</code>: encryptedSearchOnly → decryptAndFindMatchedPositions → findRecordIdsFromMatchedPositions), <code>oracle/src/heracles_config.h</code>(일치 점수 = 검색어 글자 수). enWord 엔진 소스는 미열람입니다.<br>
+2026-10-19 재확인: <a href="https://docs.percona.com/pg-tde/architecture/architecture.html" target="_blank" rel="noopener">Percona 아키텍처·키 제공자</a>, <a href="https://www.mongodb.com/docs/manual/core/queryable-encryption/features/" target="_blank" rel="noopener">MongoDB QE 흐름·운영 KMS 요구·위협 모델 한계</a>, <a href="https://www.postgresql.org/docs/current/app-pgdump.html" target="_blank" rel="noopener">pg_dump</a>. 구조 설명을 확인했으며, 실제 배포 버전·덤프 옵션·암호학적 보장은 검증 전입니다. 모든 침해 판정은 조건부 예상이며, 설명용 숫자는 측정값이 아닙니다.
+</footer>
+</main>
+
+<script>
+// ① stepper
+const steps=[
+ {t:'저장된 상태 (검색 전)',path:'디스크',zones:['disk'],
+  w:'디스크에 세 가지가 있습니다. 진단 값은 AES 암호문입니다. FHE 인덱스는 서로 다른 값마다 토큰 하나(‘당뇨’, ‘고혈압’)를 FHE 암호문으로 담고, 토큰마다 속한 행을 연결합니다. 그리고 이 예시에서는 두 키 파일도 같은 호스트에 있습니다.',
+  p:'AES 컬럼은 암호문. 키 파일의 읽기 권한은 OS 권한에 따름; 이름·ID 등 일반 필드는 평문',k:'사용 안 함',
+  m:'Mode 1에서는 키 파일이 이 디스크에 없고 외부 KMS에 있습니다.'},
+ {t:'검색 요청',path:'앱 → Oracle',zones:['app','ora'],
+  w:'앱이 SQL로 ‘당뇨’를 찾습니다. 검색어는 암호화되지 않은 채 Oracle에 도착합니다.',
+  p:'검색어 ‘당뇨’ (SQL 문, 세션 메모리)',k:'—',
+  m:'Mode 1도 같습니다. 검색어 평문은 어느 모드에서나 DB 서버를 지납니다.'},
+ {t:'Heracles 호출 · 인덱스 불러오기',path:'Oracle → extproc ← 디스크',zones:['ora','ext','disk'],
+  w:'Oracle이 extproc 에이전트의 libheracles.so를 부릅니다. 세션의 첫 호출이면 두 키 파일을 메모리에 올리고, 진단 컬럼의 인덱스 파일만 불러옵니다. 검색어는 설정된 인코딩에 맞게 처리됩니다. 각도 그림은 엔진 내부를 검증한 도식이 아닙니다.',
+  p:'검색어 ‘당뇨’ (extproc 메모리)',k:'메모리에 올리기만 함 (secret.key, aes256.key)',
+  m:'Mode 1에서는 이 일을 별도 데몬이 하고, 데몬에는 비밀키가 없습니다.'},
+ {t:'동형 비교 (암호문 상태)',path:'extproc 내부',zones:['ext'],why:true,
+  w:'평문 검색어와 FHE 암호문 토큰을 동형암호로 비교합니다. 토큰을 풀지 않고 계산하므로 결과 점수도 암호문입니다. 원본 진단 컬럼은 이 단계에서 전혀 쓰이지 않습니다.',
+  p:'검색어뿐. 토큰과 점수는 암호문',k:'필요 없음',
+  m:'Mode 1도 같습니다. 이 단계는 공개 정보만으로 할 수 있습니다.'},
+ {t:'점수만 복호해서 일치 판정',path:'extproc 내부',zones:['ext'],why:true,
+  w:'같은 프로세스에 있는 FHE 비밀키로 점수만 복호합니다. 주석은 Exact 일치 점수를 검색어 코드포인트 수(‘당뇨’ = 2)로 설명합니다. 실제 판정은 프리셋과 정밀도 허용 범위에 따릅니다. 토큰₁=2.00, 토큰₂=0.41은 설명용 예시입니다.',
+  p:'점수와 판정 결과 (진단 값 자체는 아님)',k:'FHE 비밀키',
+  m:'이 검색 라운드의 Mode 1 경로에서는 일치 판정을 KMS에 요청합니다. AES 값 복호화 등은 별도 KMS 호출입니다. KMS는 점수 대신 ‘몇 번째 토큰이 일치했는지’만 돌려줍니다.'},
+ {t:'토큰 → 행 ID',path:'extproc → Oracle',zones:['ext','ora'],
+  w:'일치한 토큰₁에 연결된 행 ID 101, 103을 꺼내 Oracle에 돌려줍니다. 결과는 순서 없는 ID 집합입니다.',
+  p:'행 ID·결과 개수 (접근 패턴과 연결 가능한 메타데이터)',k:'—',m:'Mode 1도 같습니다.'},
+ {t:'원본 테이블과 JOIN',path:'Oracle → 앱',zones:['ora','app'],rows:['101','103'],
+  w:'Oracle이 ID로 값 테이블에서 101, 103행을 고릅니다. 진단 값은 여전히 AES 암호문입니다. 여기까지 원본 컬럼은 한 번도 복호화되지 않았습니다. 건수만 필요하면 여기서 끝납니다.',
+  p:'검색어·고객 이름·ID 등 일반 필드. 보호 진단 값은 암호문',k:'—',m:'Mode 1도 같습니다.'},
+ {t:'(선택) 원문 보기',path:'Oracle → extproc → Oracle → 앱',zones:['ora','ext','app'],rows:['101','103'],
+  w:'SELECT에 heracles.decrypt(진단)을 쓰면 extproc이 AES 키로 두 행을 복호합니다. 결과는 Oracle을 거쳐 앱에 ‘당뇨’로 돌아갑니다. 이 순간 DB 서버 쪽에 평문이 생깁니다.',
+  p:'‘당뇨’ × 2 (extproc, Oracle, 앱)',k:'AES 키',
+  m:'Mode 1에서는 AES 복호도 KMS가 합니다. 하지만 평문은 똑같이 DB 쪽으로 돌아옵니다.'}
+];
+const stage=document.getElementById('stage');
+const inRange=(spec,n)=>spec.split(',').some(r=>{const [a,b]=r.split('-').map(Number);return b===undefined?n===a:n>=a&&n<=b});
+let cur=0;
+const btnWrap=document.getElementById('stepBtns');
+steps.forEach((s,i)=>{const b=document.createElement('button');b.textContent=i;b.title=s.t;b.setAttribute('aria-label',`${i}단계: ${s.t}`);b.onclick=()=>go(i);btnWrap.appendChild(b)});
+function go(n){
+  cur=Math.max(0,Math.min(steps.length-1,n));const s=steps[cur];
+  stage.querySelectorAll('[data-s]').forEach(el=>el.classList.toggle('hide',!inRange(el.dataset.s,cur)));
+  stage.querySelectorAll('[data-h]').forEach(el=>el.classList.toggle('hl',inRange(el.dataset.h,cur)));
+  stage.querySelectorAll('[data-zone]').forEach(z=>z.classList.toggle('active',s.zones.includes(z.dataset.zone)));
+  stage.querySelectorAll('[data-row]').forEach(r=>r.classList.toggle('pick',(s.rows||[]).includes(r.dataset.row)));
+  btnWrap.querySelectorAll('button').forEach((b,i)=>b.setAttribute('aria-pressed',String(i===cur)));
+  capN.textContent=`${cur}단계 / ${steps.length-1}`;capT.textContent=s.t;capPath.textContent='경로: '+s.path;
+  capW.textContent=s.w;capP.textContent=s.p;capK.textContent=s.k;capM.textContent=s.m;
+  why.hidden=!s.why;
+  prev.disabled=cur===0;next.disabled=cur===steps.length-1;
+}
+prev.onclick=()=>go(cur-1);next.onclick=()=>go(cur+1);
+document.addEventListener('keydown',e=>{if(e.target.closest('input,textarea'))return;if(e.key==='ArrowRight')go(cur+1);if(e.key==='ArrowLeft')go(cur-1)});
+// #s4 opens step 4, so the board can link straight to a step
+function openHashStep(){const match=/^#s([0-7])$/.exec(location.hash);go(match?Number(match[1]):0)}
+openHashStep();
+window.addEventListener('hashchange',openHashStep);
+
+// ② lanes
+const moments={
+ store:{label:'저장할 때',q:'고객 ‘가’의 진단 <b>당뇨</b>를 저장',
+  take:'Heracles 로컬과 pg_tde는 저장할 때 DB 서버가 평문을 봅니다. QE는 앱에서 암호화해 보냅니다. 별도 클라이언트 AES + cc-append 경로는 값·토큰을 암호화해 보낼 수 있습니다. 하지만 서버의 키 보유·다른 평문 경로까지 사라지는 것은 아니며, 성능은 선택한 프리셋·환경에서 측정해야 합니다.'},
+ search:{label:'검색할 때',q:'진단이 <b>당뇨</b>인 고객 찾기',
+  take:'pg_tde는 데이터를 평문으로 풀어 일반 인덱스로 비교합니다. Heracles는 값을 풀지 않고 FHE 인덱스에서 비교한 뒤 ‘일치 여부’만 복호합니다. 단, 검색어는 평문으로 들어옵니다. QE는 서버가 암호화된 토큰만으로 찾습니다.'},
+ view:{label:'결과를 볼 때',q:'찾은 고객의 진단 값 <b>보기</b>',
+  take:'값을 보여 주는 순간, pg_tde와 Heracles(decrypt)는 DB 서버 쪽에서 평문이 됩니다. QE는 앱 안에서만 평문이 됩니다.'}
+};
+const products=[
+ {name:'Heracles',sub:'로컬(MVP) 모드',key:{warn:true,c:[['key','DB 서버 디스크: secret.key · aes256.key']]},
+  store:{app:[['plain','‘당뇨’를 SQL로 보냄']],mem:[['plain','SQL·트리거·extproc에 ‘당뇨’'],['aes','AES로 값 암호화'],['fhe','FHE 토큰 추가']],disk:[['aes','값: AES 암호문'],['fhe','인덱스: FHE 암호문'],['key','키 파일 2개']]},
+  search:{app:[['plain','검색어 ‘당뇨’']],mem:[['plain','검색어 ‘당뇨’'],['fhe','점수는 암호문으로 계산'],['id','판정 → ID 101 · 103'],['aes','값 행은 AES 그대로']],disk:[['none','변화 없음']]},
+  view:{app:[['plain','‘당뇨’ 받음 (decrypt 사용 시)']],mem:[['plain','extproc·Oracle에서 AES 복호 → ‘당뇨’']],disk:[['none','변화 없음']]}},
+ {name:'pg_tde',sub:'로컬 키링 파일',key:{warn:true,c:[['key','DB 서버: 키링 파일(주 키) · Vault/KMIP로 분리 가능']]},
+  store:{app:[['plain','‘당뇨’를 SQL로 보냄']],mem:[['plain','버퍼에 평문 행과 평문 인덱스']],disk:[['aes','쓸 때 페이지 암호화 (테이블·인덱스)'],['key','키링 파일 (로컬 구성 시)']]},
+  search:{app:[['plain','검색어 ‘당뇨’']],mem:[['plain','페이지를 읽으며 복호 → 평문 B-tree로 비교']],disk:[['none','변화 없음']]},
+  view:{app:[['plain','‘당뇨’를 그대로 받음']],mem:[['plain','평문 결과 행']],disk:[['none','변화 없음']]}},
+ {name:'MongoDB QE',sub:'로컬 마스터 키',key:{warn:false,c:[['key','앱 쪽: 마스터 키 · DB엔 그 키로 감싼 데이터 키만']]},
+  store:{app:[['plain','‘당뇨’'],['aes','드라이버가 암호화 + 검색 태그 생성']],mem:[['aes','암호문과 검색 태그만']],disk:[['aes','암호문 필드 + 메타데이터 컬렉션']]},
+  search:{app:[['plain','검색어 ‘당뇨’'],['aes','드라이버가 검색 토큰으로 변환']],mem:[['aes','토큰으로 검색 · 보호 필드 평문 없음']],disk:[['none','변화 없음']]},
+  view:{app:[['plain','드라이버가 앱에서 복호 → ‘당뇨’']],mem:[['aes','암호문 그대로 반환']],disk:[['none','변화 없음']]}}
+];
+const esc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const chips=list=>list.map(([k,t])=>`<span class="chip ${k}">${esc(t)}</span>`).join('');
+let moment='search';
+function renderLanes(){
+  const m=moments[moment];
+  momentTabs.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.m===moment)));
+  momentQ.innerHTML='상황: '+m.q;momentTake.textContent=m.take;
+  let h='<div class="corner"></div>'+products.map(p=>`<div class="ph">${p.name}<small>${p.sub}</small></div>`).join('');
+  const rows=[['키 위치','key'],['앱 쪽','app'],['DB 서버 메모리<br>(처리 중)','mem'],['DB 서버 디스크','disk']];
+  rows.forEach(([label,f],ri)=>{
+    const last=ri===rows.length-1?' last':'';
+    h+=`<div class="${last}">${label}</div>`;
+    products.forEach(p=>{
+      if(f==='key')h+=`<div class="cell keyrow${p.key.warn?' warn':''}${last}">${chips(p.key.c)}</div>`;
+      else h+=`<div class="cell${last}">${chips(p[moment][f])}</div>`;
+    });
+  });
+  lanesGrid.innerHTML=h;
+}
+Object.entries(moments).forEach(([k,m])=>{const b=document.createElement('button');b.dataset.m=k;b.textContent=m.label;b.onclick=()=>{moment=k;renderLanes()};momentTabs.appendChild(b)});
+renderLanes();
+
+// ③ breach
+const breaches={
+ disk:{label:'DB 서버 디스크 통째 복사 (꺼진 상태)',v:[
+  ['bad','키 동반 유출 시 복호 가능 예상','AES 값 암호문과 해당 AES 키까지 확보하면 복호화 능력이 노출됩니다. FHE 비밀키와 인덱스도 함께 확보했는지 따로 기록합니다. 실험 전 예상입니다.'],
+  ['bad','읽힘 (로컬 키링)','사용 가능한 키링과 데이터 파일을 함께 확보한 조건은 복호 가능성이 있습니다. 외부 키 제공자 구성에서는 키와 온라인 접근 권한을 얻었는지 다시 평가해야 합니다.'],
+  ['good','보호 필드 보호 예상','앱 키·복호 권한이 없는 DB 사본만의 조건. 일반 필드와 운영 메타데이터까지 자동으로 숨겨지는 것은 아닙니다.']]},
+ dump:{label:'논리 백업 유출 (expdp · pg_dump · mongodump)',v:[
+  ['good','암호문 유지 조건','AES 컬럼을 그대로 덤프하고 키·별도 인덱스 파일을 포함하지 않은 경우. decrypt 결과·평문 뷰를 내보내거나 별도 백업 암호화를 적용한 경우는 구분합니다. 실제 덤프 옵션 확인 필요.'],
+  ['bad','읽힘','덤프는 SQL로 읽어서 만들기 때문에 평문으로 나옵니다. 저장 암호화는 파일만 보호합니다.'],
+  ['good','암호문 유지 조건','저장된 보호 필드를 그대로 복사한 덤프와 앱에서 복호화한 뒤 내보낸 자료를 구분합니다. 키 동반 유출·덤프 옵션도 확인합니다.']]},
+ sql:{label:'SELECT 권한만 있는 DB 계정',v:[
+  ['cond','암호문만 보임','SELECT만으로는 AES 암호문만 보입니다. heracles 패키지 실행 권한까지 있으면 decrypt로 읽을 수 있습니다.'],
+  ['bad','읽힘','투명 암호화라서 권한 있는 조회에는 평문이 나옵니다.'],
+  ['good','안 읽힘','DB 관리자도 앱 쪽 키가 없으면 암호문만 봅니다.']]},
+ root:{label:'DB 서버 root 권한 (실행 중)',v:[
+  ['bad','읽힘','키 파일을 직접 읽거나, extproc 메모리에서 검색어와 복호 결과를 볼 수 있습니다.'],
+  ['bad','읽힘','키와 평문 버퍼가 메모리에 있습니다.'],
+  ['cond','지속 침해 보장 아님','DB에 보호 필드의 평문이 없는 구조지만, 지속 접근 및 스냅샷과 질의 정보의 결합 관측은 공식 보장 범위 밖입니다. 직접 평문 관측과 추론을 분리해 시험합니다.']]}
+};
+let breach='disk';
+function renderBreach(){
+  breachTabs.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.b===breach)));
+  verdicts.innerHTML=breaches[breach].v.map(([cls,v,why],i)=>`<div class="vcard ${cls}"><div class="who">${products[i].name} · ${products[i].sub}</div><div class="v">${v}</div><p>${esc(why)}</p></div>`).join('');
+}
+Object.entries(breaches).forEach(([k,b])=>{const el=document.createElement('button');el.dataset.b=k;el.textContent=b.label;el.onclick=()=>{breach=k;renderBreach()};breachTabs.appendChild(el)});
+renderBreach();
+</script>
+</body>
+</html>
