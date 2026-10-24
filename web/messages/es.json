@@ -12,12 +12,12 @@
       "submitting": "Iniciando sesión…",
       "title": "Iniciar sesión",
       "username": "Usuario",
-      "welcome": "Bienvenido de nuevo. Introduzca su contraseña para seguir usando ARTEX."
+      "welcome": "Bienvenido de nuevo. Introduzca su contraseña para seguir usando CryptoLab ARTEX."
     },
     "setup": {
       "confirmPassword": "Confirmar contraseña",
       "confirmPlaceholder": "Vuelva a introducir la contraseña",
-      "desc": "Es la primera vez que usa ARTEX. Establezca una contraseña de inicio de sesión para su cuenta (al menos 8 caracteres).",
+      "desc": "Es la primera vez que usa CryptoLab ARTEX. Establezca una contraseña de inicio de sesión para su cuenta (al menos 8 caracteres).",
       "errorBackend": "No se puede conectar con el servicio backend",
       "errorInit": "La inicialización falló",
       "errorMismatch": "Las dos contraseñas no coinciden",
@@ -714,7 +714,9 @@
           "cidr": "Rango CIDR"
         }
       }
-    }
+    },
+    "liveEnter": "Panel en vivo",
+    "liveExit": "Volver a sesiones"
   },
   "retest": {
     "panel": {
@@ -3108,6 +3110,64 @@
       "cancel": "Cancelar",
       "starting": "Iniciando…",
       "start": "Iniciar nueva sesión"
+    },
+    "live": {
+      "graph": "Grafo",
+      "graphAdd": "Añadir panel del grafo de exploración",
+      "graphClose": "Cerrar panel del grafo",
+      "graphLoading": "Cargando grafo…",
+      "graphError": "No se pudo actualizar el grafo",
+      "graphRetry": "Reintentar",
+      "graphDetails": "Mostrar leyenda y minimapa",
+      "balancePanes": "Distribuir todos los paneles",
+      "addPane": "Añadir panel",
+      "addSession": "Abrir {title} en un panel",
+      "dragToAdd": "Arrastra al área de trabajo para añadir un panel",
+      "autoFollow": "Distribución automática",
+      "autoFollowHint": "Planner y hasta dos workers activos. Los paneles completados muestran el siguiente worker activo. Los cambios manuales desactivan la distribución automática.",
+      "expandPane": "Ampliar panel",
+      "restorePane": "Restaurar panel (Esc)",
+      "closePane": "Cerrar panel (el agente sigue activo)",
+      "emptyWorkspace": "Arrastra una sesión aquí o pulsa + en la lista.",
+      "pane": "Panel de sesión {n}",
+      "selectPane": "Seleccionar panel {n}",
+      "choose": "Elegir sesión",
+      "search": "Buscar sesiones…",
+      "noMatches": "No hay sesiones coincidentes",
+      "unpin": "Desfijar sesión",
+      "pin": "Fijar sesión",
+      "openSession": "Abrir conversación y controles",
+      "approval": "Aprobación pendiente",
+      "older": "Cargar mensajes anteriores",
+      "empty": "Elige una sesión en la lista o el menú. Los nuevos workers ocupan paneles vacíos.",
+      "latest": "Seguir lo más reciente",
+      "pinnedHint": "Desfija este panel antes de cambiar su sesión.",
+      "pinnedLayout": "Desfija los paneles que se ocultarían antes de reducir la distribución.",
+      "resizeList": "Cambiar ancho de la lista",
+      "showList": "Mostrar lista",
+      "hideList": "Ocultar lista",
+      "target": "Panel seleccionado {n}",
+      "workers": "Workers · {running} activos · {done} completados",
+      "layout": "Distribución de sesiones",
+      "layoutOption": "{columns} columnas × {rows} filas",
+      "dock": {
+        "hint": "Arrastra el asa · bordes dividen · centro intercambia · Esc cancela",
+        "arrange": "Organizar paneles",
+        "source": "Mover panel",
+        "target": "Respecto a",
+        "position": "Posición",
+        "left": "Izquierda",
+        "right": "Derecha",
+        "top": "Arriba",
+        "bottom": "Abajo",
+        "center": "Intercambiar",
+        "apply": "Mover",
+        "restore": "Restaurar panel",
+        "moved": "Panel movido",
+        "grip": "Arrastra para mover. Usa Organizar paneles con el teclado.",
+        "resize": "Cambiar tamaño"
+      },
+      "selectTarget": "Selecciona un panel para cambiar su sesión"
     }
   },
   "settingsPage": {

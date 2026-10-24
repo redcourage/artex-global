@@ -12,7 +12,10 @@ import {
   ClockIcon,
   HistoryIcon,
   Loader2Icon,
-  PaperclipIcon,
+  NetworkIcon,
+  PanelLeftCloseIcon,
+  PanelLeftOpenIcon,
+  PanelsTopLeftIcon,
   PauseIcon,
   PlusIcon,
   RadioIcon,
@@ -22,14 +25,15 @@ import {
   Trash2Icon,
   UserIcon,
   WifiOffIcon,
-  XIcon,
   ZapOffIcon,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { ApprovalExecutionFocus, useApprovalFocus, useApprovalHistory } from "@/components/approval-execution-focus";
+import type { DockGripProps } from "@/components/dock-workspace";
 import { MentionTextarea } from "@/components/mention-textarea";
+import { SessionDockWorkspace } from "@/components/session-dock-workspace";
 import { SideQuestionButton, SideQuestionWorkspace } from "@/components/side-question-workspace";
 import { TodoPopover } from "@/components/todo-popover";
 import { Transcript } from "@/components/transcript";
@@ -46,6 +50,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupButton } from "@/components/ui/input-group";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,11 +58,31 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useSideQuestions } from "@/hooks/use-side-questions";
 import { api, sseUrl } from "@/lib/api";
 import { shouldSubmitOnKey, useChatSendMode } from "@/lib/chat-send-mode";
+import {
+  AUTO_DONE_HOLD_MS,
+  advanceAutoLiveSlots,
+  createAutoLiveSlots,
+  canUseLiveLayout,
+  createLiveSlots,
+  fillLiveSlots,
+  LIVE_LAYOUTS,
+  type LiveLayout,
+  replaceLiveSlot,
+  SESSION_DRAG_TYPE,
+} from "@/lib/live-session-layout";
 import { MOCK } from "@/lib/mock/enabled";
+import {
+  type DockNode,
+  type DockZone,
+  dockGeometry,
+  dockGrid,
+  dockInsert,
+  dockMove,
+  dockRemove,
+} from "@/lib/session-dock";
 import { isBtwCommand } from "@/lib/side-questions";
 import type {
   Activity,
-  ChatAttachment,
   IntentAsset,
   InterceptApprovalRow,
   Session,
@@ -70,18 +95,15 @@ import type {
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+import { LIVE_GRAPH_ID, LiveGraphPane } from "./live-graph-pane";
+import { type LiveScrollPosition, LiveSessionPane } from "./live-session-pane";
+import { EMPTY_MAIN_DRAFT, MainChatComposer, type MainChatDraft } from "./main-chat-composer";
+
 // resolutionLabel names the LLM a session runs on. The badge shows this alone and
 // keeps the model id in its tooltip. Env-backed configs can arrive without a name,
 // so fall back to the model id rather than rendering an empty badge.
 function resolutionLabel(r: TaskLLMResolution, unnamed: string): string {
   return r.name || r.model || unnamed;
-}
-
-// fmtBytes renders a human file size for attachment chips (mirrors transcript.tsx).
-function fmtBytes(n: number): string {
-  if (n >= 1 << 20) return `${(n / (1 << 20)).toFixed(1)} MB`;
-  if (n >= 1 << 10) return `${(n / (1 << 10)).toFixed(1)} KB`;
-  return `${n} B`;
 }
 
 // ── Reliability model (see docs/task-session-history-sse-remediation.md) ──────────
@@ -354,6 +376,7 @@ function SessionItem({
   onCancel,
   controlling,
   deleted,
+  onAdd,
 }: {
   s: Session;
   active: boolean;
@@ -364,6 +387,7 @@ function SessionItem({
   onCancel?: () => void;
   controlling?: boolean;
   deleted?: boolean;
+  onAdd?: () => void;
 }) {
   const t = useTranslations("sessions");
   const icon = deleted ? (
@@ -390,6 +414,13 @@ function SessionItem({
       <button
         type="button"
         onClick={onClick}
+        draggable={!!onAdd}
+        onDragStart={(e) => {
+          if (!onAdd) return;
+          e.dataTransfer.setData(SESSION_DRAG_TYPE, s.id);
+          e.dataTransfer.effectAllowed = "copy";
+        }}
+        title={onAdd ? t("live.dragToAdd") : undefined}
         className="flex min-w-0 flex-1 items-center gap-1 px-2 py-1.5 text-left text-sm"
       >
         {icon ?? <span className="size-3.5 shrink-0" />}
@@ -426,6 +457,19 @@ function SessionItem({
           </span>
         )}
       </button>
+      {onAdd && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          className="shrink-0 opacity-0 group-hover/session:opacity-100 group-focus-within/session:opacity-100"
+          title={t("live.addPane")}
+          aria-label={t("live.addSession", { title: displayTitle })}
+          onClick={onAdd}
+        >
+          <PlusIcon />
+        </Button>
+      )}
       {cancellable && (
         <div className="flex shrink-0 items-center gap-0.5 pr-1 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover/session:opacity-100 sm:group-focus-within/session:opacity-100">
           <Button
@@ -489,9 +533,76 @@ function WorkerAssetBadge({ assets }: { assets: IntentAsset[] }) {
   );
 }
 
-export function SessionsTab({ taskId }: { taskId: string }) {
+export function SessionsTab({
+  taskId,
+  liveMode = false,
+  onLiveModeChange,
+  initialAutoFollow = true,
+}: {
+  taskId: string;
+  liveMode?: boolean;
+  onLiveModeChange?: (live: boolean) => void;
+  initialAutoFollow?: boolean;
+}) {
   const t = useTranslations("sessions");
   const approvalFocus = useApprovalFocus({ taskId });
+  const [graphOpen, setGraphOpen] = React.useState(false);
+  const [liveCount, setLiveCount] = React.useState(3);
+  const nextPane = React.useRef(6);
+  const [liveLayout, setLiveLayout] = React.useState<LiveLayout>("3");
+  const [customDock, setCustomDock] = React.useState<DockNode | null>(null);
+  const [autoFollow, setAutoFollow] = React.useState(initialAutoFollow);
+  const autoTask = React.useRef(taskId);
+  const doneSince = React.useRef(new Map<string, number>());
+  const [completionEpoch, setCompletionEpoch] = React.useState(0);
+  const [liveSlots, setLiveSlots] = React.useState(() =>
+    initialAutoFollow ? createAutoLiveSlots(PLANNER_ID) : createLiveSlots(),
+  );
+  const [activePane, setActivePane] = React.useState<number | null>(null);
+  const [liveListHidden, setLiveListHidden] = React.useState(false);
+  const [liveListWidth, setLiveListWidth] = React.useState(320);
+  const [liveScrollMemory] = React.useState(() => new Map<string, LiveScrollPosition>());
+  const visibleKeysRef = React.useRef<string[]>([]);
+  const liveReadingRef = React.useRef(new Map<string, { key: string; following: boolean }>());
+  const liveModeRef = React.useRef(liveMode);
+  React.useEffect(() => {
+    liveModeRef.current = liveMode;
+  }, [liveMode]);
+  React.useEffect(() => {
+    if (!liveMode) return;
+    const clearSelection = (event: PointerEvent) => {
+      if (!(event.target instanceof Element)) return;
+      if (event.target.closest("[data-live-pane], [data-live-pane-controls], [data-session-list]")) return;
+      setActivePane(null);
+    };
+    document.addEventListener("pointerdown", clearSelection, true);
+    return () => document.removeEventListener("pointerdown", clearSelection, true);
+  }, [liveMode]);
+  const layout = LIVE_LAYOUTS.find((item) => item.id === liveLayout) ?? LIVE_LAYOUTS[2];
+  const visibleSlots = autoFollow
+    ? liveSlots.slice(0, 3).filter((slot) => slot.sessionId)
+    : liveSlots.slice(0, liveCount);
+  const sessionTree = visibleSlots.length
+    ? dockGrid(
+        visibleSlots.map((slot) => slot.id),
+        autoFollow ? visibleSlots.length : layout.columns,
+      )
+    : null;
+  const liveTree =
+    (autoFollow ? null : customDock) ??
+    (graphOpen
+      ? sessionTree
+        ? {
+            kind: "split" as const,
+            id: "graph-row",
+            axis: "y" as const,
+            ratio: 0.5,
+            first: { kind: "pane" as const, id: LIVE_GRAPH_ID },
+            second: sessionTree,
+          }
+        : { kind: "pane" as const, id: LIVE_GRAPH_ID }
+      : sessionTree);
+
   const [selectedSessionId, setActiveId] = React.useState(MAIN_ID);
   const focusSession = React.useMemo<Session | undefined>(() => {
     const source = approvalFocus.state?.source;
@@ -541,7 +652,11 @@ export function SessionsTab({ taskId }: { taskId: string }) {
   const [olderIntentsHasMore, setOlderIntentsHasMore] = React.useState(false);
   const [hasLoadedOlderIntentsPage, setHasLoadedOlderIntentsPage] = React.useState(false);
   const [loadingOlderIntents, setLoadingOlderIntents] = React.useState(false);
-  const [input, setInput] = React.useState("");
+  const [mainDrafts, setMainDrafts] = React.useState<Record<number, MainChatDraft>>({});
+  const mainSendingRef = React.useRef(false);
+  function updateMainDraft(seg: number, update: (draft: MainChatDraft) => MainChatDraft) {
+    setMainDrafts((drafts) => ({ ...drafts, [seg]: update(drafts[seg] ?? EMPTY_MAIN_DRAFT) }));
+  }
   const [sending, setSending] = React.useState(false);
   const [stopping, setStopping] = React.useState(false);
   const [mainChatRunning, setMainChatRunning] = React.useState<boolean | null>(null);
@@ -553,22 +668,16 @@ export function SessionsTab({ taskId }: { taskId: string }) {
   const [workerMessage, setWorkerMessage] = React.useState("");
   const [workerMessageRequestId, setWorkerMessageRequestId] = React.useState("");
   const [workerMessageSending, setWorkerMessageSending] = React.useState(false);
-  // 方式1 文件上传:选好的附件(已落到任务工作目录 uploads/),随下条消息一起发。
-  const [attachments, setAttachments] = React.useState<ChatAttachment[]>([]);
-  const [uploading, setUploading] = React.useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-  async function pickFiles(files: FileList | null) {
-    if (!files || files.length === 0) return;
-    setUploading(true);
+  async function pickFiles(seg: number, files: FileList | null) {
+    if (!files?.length) return;
+    updateMainDraft(seg, (draft) => ({ ...draft, uploading: true }));
     try {
       const r = await api.chatUpload("task", taskId, Array.from(files));
-      setAttachments((prev) => [...prev, ...r.attachments]);
+      updateMainDraft(seg, (draft) => ({ ...draft, attachments: [...draft.attachments, ...r.attachments] }));
     } catch (e) {
       toast.error(t("toast.uploadFailed", { msg: (e as Error).message }));
     } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      updateMainDraft(seg, (draft) => ({ ...draft, uploading: false }));
     }
   }
 
@@ -586,7 +695,6 @@ export function SessionsTab({ taskId }: { taskId: string }) {
       setStore((prev) => ({ ...prev, [mainSessionKey(r.seq)]: { ...emptyState(), loaded: true } }));
       setActiveId(mainSessionId(r.seq));
       setListOpen(false);
-      setInput("");
     } catch (e) {
       toast.error(t("toast.createSessionFailed", { msg: (e as Error).message }));
     } finally {
@@ -891,6 +999,17 @@ export function SessionsTab({ taskId }: { taskId: string }) {
   // ID) resumes from the DB, so a dropped realtime link self-heals; seq-merge dedups.
   React.useEffect(() => {
     setStore({});
+    doneSince.current.clear();
+    setAutoFollow(initialAutoFollow);
+    setLiveSlots(initialAutoFollow ? createAutoLiveSlots(PLANNER_ID) : createLiveSlots());
+    setLiveCount(3);
+    setGraphOpen(false);
+    nextPane.current = 6;
+    setLiveLayout("3");
+    setCustomDock(null);
+    setActivePane(null);
+    liveScrollMemory.clear();
+    liveReadingRef.current.clear();
     setIntents([]);
     setIntentAssets([]);
     setOlderIntents([]);
@@ -1036,13 +1155,18 @@ export function SessionsTab({ taskId }: { taskId: string }) {
             // but never while the user is reading this session's history (scrolled up).
             let hasMore = cur.hasMore;
             let earliestSeq = cur.earliestSeq;
-            const trimmable = k !== activeK || atBottomRef.current;
+            const readingInLivePane =
+              liveModeRef.current &&
+              [...liveReadingRef.current.values()].some((pane) => pane.key === k && !pane.following);
+            const trimmable = !readingInLivePane && (k !== activeK || atBottomRef.current);
             if (trimmable && items.length > MAX_KEEP) {
               items = items.slice(items.length - MAX_KEEP);
               hasMore = true;
               earliestSeq = items[0].seq;
             }
-            const unread = k === activeK ? 0 : cur.unread + 1;
+            const unread = (liveModeRef.current ? visibleKeysRef.current.includes(k) : k === activeK)
+              ? 0
+              : cur.unread + 1;
             return { ...prev, [k]: { ...cur, items, lastTs: a.ts, unread, hasMore, earliestSeq } };
           });
         };
@@ -1059,9 +1183,9 @@ export function SessionsTab({ taskId }: { taskId: string }) {
       esRef.current?.close();
       esRef.current = null;
     };
-  }, [taskId, patchStore, t]);
+  }, [taskId, patchStore, t, liveScrollMemory]);
 
-  // Reconcile the active transcript with persisted history even when SSE is open.
+  // Reconcile visible transcripts with persisted history even when SSE is open.
   // onopen confirms the connection, not delivery: a proxy can buffer frames and
   // a lossy broadcast can miss individual events without closing the stream.
   // SSE still supplies immediate updates; history repairs gaps every 5s (2s when
@@ -1073,28 +1197,31 @@ export function SessionsTab({ taskId }: { taskId: string }) {
     let timer: ReturnType<typeof setTimeout>;
     const interval = sseLive ? 5000 : 2000;
     const poll = async () => {
-      const key = activeKeyRef.current;
-      try {
-        const r = await api.activityHistory(taskId, key, 0, PAGE);
-        if (!alive) return;
-        patchStore(key, (s) => {
-          const items = mergeBySeq(s.items, r.items);
-          return {
-            ...s,
-            items,
-            loaded: true,
-            loading: false,
-            error: undefined,
-            hasMore: s.loaded ? s.hasMore : r.hasMore,
-            earliestSeq: items[0]?.seq ?? 0,
-            lastTs: items.at(-1)?.ts ?? s.lastTs,
-          };
-        });
-      } catch {
-        // best-effort; the next tick retries, and SSE reconnection compensates.
-      } finally {
-        if (alive) timer = setTimeout(() => void poll(), interval);
-      }
+      const keys = liveModeRef.current ? visibleKeysRef.current : [activeKeyRef.current];
+      await Promise.all(
+        [...new Set(keys)].map(async (key) => {
+          try {
+            const r = await api.activityHistory(taskId, key, 0, PAGE);
+            if (!alive) return;
+            patchStore(key, (s) => {
+              const items = mergeBySeq(s.items, r.items);
+              return {
+                ...s,
+                items,
+                loaded: true,
+                loading: false,
+                error: undefined,
+                hasMore: s.loaded ? s.hasMore : r.hasMore,
+                earliestSeq: items[0]?.seq ?? 0,
+                lastTs: items.at(-1)?.ts ?? s.lastTs,
+              };
+            });
+          } catch {
+            // Independent retries: one failed pane must not interrupt the others.
+          }
+        }),
+      );
+      if (alive) timer = setTimeout(() => void poll(), interval);
     };
     timer = setTimeout(() => void poll(), interval);
     return () => {
@@ -1312,6 +1439,183 @@ export function SessionsTab({ taskId }: { taskId: string }) {
     return items;
   }, [mainSessions, workerSessions, plannerLive, focusSession, retainedSession, t]);
 
+  const liveMainReady = !!store[mainSessionKey(currentSeg)]?.loaded;
+  const workerSnapshot = JSON.stringify(workerSessions.map(({ id, status }) => ({ id, status })).reverse());
+  React.useEffect(() => {
+    // A changed task first clears the old task's snapshot in the bootstrap effect.
+    if (autoTask.current !== taskId) {
+      autoTask.current = taskId;
+      return;
+    }
+    if (!liveMode || !liveMainReady) return;
+    const workers: { id: string; status: SessionStatus }[] = JSON.parse(workerSnapshot);
+    const now = Date.now();
+    const completed = new Set(workers.filter((worker) => worker.status === "done").map((worker) => worker.id));
+    for (const id of doneSince.current.keys()) if (!completed.has(id)) doneSince.current.delete(id);
+    for (const id of completed) if (!doneSince.current.has(id)) doneSince.current.set(id, now);
+    const held = new Set<string>();
+    let nextRelease = Infinity;
+    for (const [id, since] of doneSince.current) {
+      const remaining = since + AUTO_DONE_HOLD_MS - now;
+      if (remaining > 0) {
+        held.add(id);
+        nextRelease = Math.min(nextRelease, remaining);
+      }
+    }
+    setLiveSlots((slots) =>
+      autoFollow
+        ? advanceAutoLiveSlots(slots, workers, held)
+        : fillLiveSlots(slots, mainSessionId(currentSeg), PLANNER_ID, workers.map((worker) => worker.id).reverse()),
+    );
+    // Let completion glow finish before reusing a pane, even without another poll.
+    if (autoFollow && Number.isFinite(nextRelease)) {
+      const timer = setTimeout(() => setCompletionEpoch((value) => value + 1), nextRelease + 1);
+      return () => clearTimeout(timer);
+    }
+  }, [liveMode, liveMainReady, currentSeg, workerSnapshot, autoFollow, taskId, completionEpoch]);
+  const visibleKeys = liveMode
+    ? visibleSlots
+        .flatMap((slot) => {
+          const session = sessions.find((item) => item.id === slot.sessionId);
+          return session ? [keyForSession(session)] : [];
+        })
+        .join("|")
+    : "";
+  React.useEffect(() => {
+    const keys = visibleKeys ? [...new Set(visibleKeys.split("|"))] : [];
+    visibleKeysRef.current = keys;
+    for (const [id, pane] of liveReadingRef.current) {
+      if (!keys.includes(pane.key)) liveReadingRef.current.delete(id);
+    }
+    for (const key of keys) {
+      // loadSession deduplicates in-flight loads, including the SSE bootstrap.
+      if (!store[key]?.loaded && !store[key]?.loading && !store[key]?.error) loadSession(key);
+      if (store[key]?.unread) patchStore(key, (value) => ({ ...value, unread: 0 }));
+    }
+  }, [visibleKeys, store, loadSession, patchStore]);
+  React.useEffect(() => {
+    if (approvalFocus.state && liveMode) onLiveModeChange?.(false);
+  }, [approvalFocus.state, liveMode, onLiveModeChange]);
+
+  function switchToManualLayout() {
+    if (!autoFollow) return;
+    setAutoFollow(false);
+    setLiveCount(visibleSlots.length);
+  }
+  function toggleAutoFollow() {
+    if (autoFollow) {
+      switchToManualLayout();
+      return;
+    }
+    setLiveSlots(advanceAutoLiveSlots(createAutoLiveSlots(PLANNER_ID), [...workerSessions].reverse()));
+    setAutoFollow(true);
+    setLiveLayout("3");
+    setCustomDock(null);
+    setActivePane(null);
+  }
+  function chooseLiveSession(id: string, index = activePane) {
+    if (index === null) {
+      const existing = visibleSlots.find((slot) => slot.sessionId === id);
+      if (existing) setActivePane(liveSlots.findIndex((slot) => slot.id === existing.id));
+      else toast.info(t("live.selectTarget"));
+      return;
+    }
+    if (liveSlots[index]?.pinned) {
+      toast.info(t("live.pinnedHint"));
+      return;
+    }
+    switchToManualLayout();
+    setLiveSlots((slots) => replaceLiveSlot(slots, index, id));
+  }
+  function addLiveSession(id: string, requestedTarget?: string, requestedZone: DockZone = "right") {
+    let target = requestedTarget;
+    let zone = requestedZone;
+    if (!sessions.some((session) => session.id === id)) return;
+    switchToManualLayout();
+    const existing = visibleSlots.findIndex((slot) => slot.sessionId === id);
+    if (existing >= 0) {
+      setActivePane(existing);
+      if (liveTree && target) setCustomDock(dockMove(liveTree, visibleSlots[existing].id, target, zone));
+      return;
+    }
+    if (!target && liveTree) {
+      // A click has no drop position: split the largest pane along its longer
+      // screen dimension, instead of repeatedly halving the last narrow column.
+      const geometry = dockGeometry(liveTree).panes;
+      target = Object.keys(geometry).sort(
+        (a, b) => geometry[b].width * geometry[b].height - geometry[a].width * geometry[a].height,
+      )[0];
+      const rect = geometry[target];
+      const box = workspaceRef.current?.querySelector("[data-dock-workspace]")?.getBoundingClientRect();
+      zone = rect.width * (box?.width || 900) >= rect.height * (box?.height || 500) ? "right" : "bottom";
+    }
+    const slot = { id: `pane-${++nextPane.current}`, sessionId: id, pinned: false };
+    const nextTree =
+      liveTree && target ? dockInsert(liveTree, slot.id, target, zone) : { kind: "pane" as const, id: slot.id };
+    setLiveSlots([...visibleSlots, slot]);
+    setLiveCount(visibleSlots.length + 1);
+    setCustomDock(nextTree);
+    setActivePane(visibleSlots.length);
+  }
+  function toggleGraph() {
+    switchToManualLayout();
+    if (graphOpen) {
+      setCustomDock(liveTree ? dockRemove(liveTree, LIVE_GRAPH_ID) : null);
+      setGraphOpen(false);
+    } else {
+      setCustomDock(
+        liveTree
+          ? {
+              kind: "split",
+              id: `graph-row-${++nextPane.current}`,
+              axis: "y",
+              ratio: 0.5,
+              first: { kind: "pane", id: LIVE_GRAPH_ID },
+              second: liveTree,
+            }
+          : { kind: "pane", id: LIVE_GRAPH_ID },
+      );
+      setGraphOpen(true);
+    }
+    setActivePane(null);
+  }
+  function closeLivePane(id: string) {
+    const index = visibleSlots.findIndex((slot) => slot.id === id);
+    if (index < 0 || !liveTree) return;
+    switchToManualLayout();
+    setLiveSlots(visibleSlots.filter((slot) => slot.id !== id));
+    setLiveCount(visibleSlots.length - 1);
+    setCustomDock(dockRemove(liveTree, id));
+    setActivePane((active) => (active === null || active === index ? null : active > index ? active - 1 : active));
+    liveReadingRef.current.delete(id);
+  }
+  function changeLiveLayout(id: LiveLayout) {
+    const target = LIVE_LAYOUTS.find((item) => item.id === id);
+    if (!target) return;
+    const count = target.columns * target.rows;
+    if (!canUseLiveLayout(liveSlots, count)) {
+      toast.info(t("live.pinnedLayout"));
+      return;
+    }
+    switchToManualLayout();
+    setLiveSlots((slots) => {
+      const next = [...slots];
+      while (next.length < count) next.push({ id: `pane-${++nextPane.current}`, sessionId: null, pinned: false });
+      return fillLiveSlots(
+        next,
+        mainSessionId(currentSeg),
+        PLANNER_ID,
+        workerSessions.map((s) => s.id),
+      );
+    });
+    setLiveCount(count);
+    setLiveLayout(id);
+    setCustomDock(null);
+    setActivePane((index) => (index === null ? null : Math.min(index, count - 1)));
+  }
+  const choices = sessions.map((session) => ({ session, title: sessionMeta.get(session.id)?.title ?? session.title }));
+  const selectedLiveId = activePane === null ? undefined : liveSlots[activePane]?.sessionId;
+
   const grouped = {
     mainagent: sessions.filter((s) => s.role === "mainagent"),
     planner: sessions.filter((s) => s.role === "planner"),
@@ -1320,27 +1624,20 @@ export function SessionsTab({ taskId }: { taskId: string }) {
   };
 
   const active = sessions.find((s) => s.id === activeId) ?? { ...MAIN_SESSION, title: t("title.main", { n: 1 }) };
-  const side = useSideQuestions(
-    active.role === "mainagent"
-      ? `/api/tasks/${taskId}/chat`
-      : active.role === "worker" && !active.inherited && active.intent_id
-        ? `/api/tasks/${taskId}/intents/${active.intent_id}`
-        : null,
+  const mainSide = useSideQuestions(`/api/tasks/${taskId}/chat`);
+  const workerSide = useSideQuestions(
+    active.role === "worker" && !active.inherited && active.intent_id
+      ? `/api/tasks/${taskId}/intents/${active.intent_id}`
+      : null,
   );
+  const side = active.role === "mainagent" ? mainSide : workerSide;
   const isMain = active.role === "mainagent";
   const isPlanner = active.role === "planner";
   const isSystem = active.role === "system";
   const activeKey = keyForSession(active);
   const activeState = store[activeKey];
-  // A main turn is serialized per task (chat lock), so "busy" is task-wide: while any
-  // main segment is mid-turn the active composer is disabled. Clear it the moment the
-  // active session's terminal record (kind='result', or an error) lands, so the input
-  // re-enables immediately instead of waiting for the next chat-status poll.
-  const activeItems = activeState?.items ?? [];
-  const activeLast = activeItems[activeItems.length - 1];
-  const activeSettled =
-    !!activeLast && (activeLast.kind === "result" || (activeLast.kind === "text" && activeLast.is_error));
-  const mainBusy = isMain && (sending || (!activeSettled && (mainChatRunning ?? recentLive(activeKey))));
+  // The backend serializes main turns per task, including different visible segments.
+  const mainBusy = sending || (mainChatRunning ?? mainSessions.some((session) => recentLive(keyForSession(session))));
   // 折叠态（手机端）标题栏要替代整张列表：显示当前会话名 + 其它会话的未读合计，
   // 否则收起后既不知道自己在看哪个会话，也看不到别处有新消息。
   const activeDisplayTitle = (active.role === "worker" ? sessionMeta.get(active.id)?.title : "") || active.title;
@@ -1500,7 +1797,7 @@ export function SessionsTab({ taskId }: { taskId: string }) {
   // biome-ignore lint/correctness/useExhaustiveDependencies: activeId intentionally rebinds the scroll listener.
   React.useEffect(() => {
     const vp = viewport();
-    if (!vp) return;
+    if (!vp || liveMode) return;
     const onScroll = () => {
       if (approvalFocus.state && !focusHistory.ready) return;
       atBottomRef.current = vp.scrollTop + vp.clientHeight >= vp.scrollHeight - 60;
@@ -1508,23 +1805,23 @@ export function SessionsTab({ taskId }: { taskId: string }) {
     };
     vp.addEventListener("scroll", onScroll, { passive: true });
     return () => vp.removeEventListener("scroll", onScroll);
-  }, [viewport, activeId, loadEarlier, approvalFocus.state, focusHistory.ready]);
+  }, [viewport, activeId, loadEarlier, approvalFocus.state, focusHistory.ready, liveMode]);
   // open/switch a session → jump to the latest (bottom)
   // biome-ignore lint/correctness/useExhaustiveDependencies: activeId intentionally scrolls a newly selected session.
   React.useLayoutEffect(() => {
     const vp = viewport();
-    if (vp && !approvalFocus.state) {
+    if (vp && !approvalFocus.state && !liveMode) {
       vp.scrollTop = vp.scrollHeight;
       atBottomRef.current = true;
     }
-  }, [activeId, viewport, approvalFocus.state]);
+  }, [activeId, viewport, approvalFocus.state, liveMode]);
   // new activity → stick to bottom only if the user is already pinned there
   // biome-ignore lint/correctness/useExhaustiveDependencies: activity growth intentionally drives live-edge scrolling.
   React.useLayoutEffect(() => {
-    if (approvalFocus.state || !atBottomRef.current) return;
+    if (liveMode || approvalFocus.state || !atBottomRef.current) return;
     const vp = viewport();
     if (vp) vp.scrollTop = vp.scrollHeight;
-  }, [activity, viewport, approvalFocus.state]);
+  }, [activity, viewport, approvalFocus.state, liveMode]);
   // Lazy detail loads (AnswerBlock / ToolBlock / Markdown) grow the content AFTER the
   // activity array settles, WITHOUT changing its reference — so the layout effects
   // above never re-fire and a freshly opened session would leave its last message
@@ -1538,45 +1835,73 @@ export function SessionsTab({ taskId }: { taskId: string }) {
     const el = contentRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(() => {
-      if (approvalFocus.state || !atBottomRef.current) return;
+      if (liveMode || approvalFocus.state || !atBottomRef.current) return;
       const vp = viewport();
       if (vp) vp.scrollTop = vp.scrollHeight;
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, [activeId, viewport, approvalFocus.state]);
+  }, [activeId, viewport, approvalFocus.state, liveMode]);
 
   function stop() {
     if (stopping) return;
     setStopping(true);
-    void api.stopChat(taskId).finally(() => setStopping(false));
+    void api
+      .stopChat(taskId)
+      .catch((e: Error) => toast.error(e.message))
+      .finally(() => setStopping(false));
   }
 
-  function send() {
-    const text = input.trim();
-    const atts = attachments;
-    if (side.handleCommand(text, () => setInput(""))) return;
-    if ((!text && atts.length === 0) || sending || mainBusy) return;
-    // No optimistic echo: the backend persists+broadcasts the human turn before it
-    // returns, so it streams back over SSE (worker="mainagent") with its real DB
-    // seq — the transcript renders it from server data like every other step. Clear
-    // the composer eagerly for responsiveness; restore it if the send fails.
-    setInput("");
-    setAttachments([]);
+  function sendMain(seg: number) {
+    const draft = mainDrafts[seg] ?? EMPTY_MAIN_DRAFT;
+    const text = draft.text.trim();
+    const atts = draft.attachments;
+    if (mainSide.handleCommand(text, () => updateMainDraft(seg, (d) => ({ ...d, text: "" })))) return;
+    if ((!text && !atts.length) || mainSendingRef.current || mainBusy || draft.uploading) return;
+    mainSendingRef.current = true;
+    updateMainDraft(seg, (d) => ({ ...d, text: "", attachments: [] }));
     setSending(true);
     chatStatusRequestRef.current++;
     api
-      .chat(text, taskId, atts.length > 0 ? atts : undefined, active.seg ?? 0)
+      .chat(text, taskId, atts.length ? atts : undefined, seg)
       .then(({ mode }) => {
         chatStatusRequestRef.current++;
         setMainChatRunning(mode === "llm");
       })
-      .catch((e) => {
-        setInput(text); // restore so the user doesn't lose their text / attachments
-        setAttachments(atts);
-        toast.error(t("toast.sendFailed", { msg: (e as Error).message || t("toast.retryLater") }));
+      .catch((e: Error) => {
+        updateMainDraft(seg, (d) => ({
+          ...d,
+          text: d.text ? `${text}\n${d.text}` : text,
+          attachments: [...atts, ...d.attachments],
+        }));
+        toast.error(t("toast.sendFailed", { msg: e.message || t("toast.retryLater") }));
       })
-      .finally(() => setSending(false));
+      .finally(() => {
+        mainSendingRef.current = false;
+        setSending(false);
+      });
+  }
+
+  function mainComposer(seg: number, live = false) {
+    const draft = mainDrafts[seg] ?? EMPTY_MAIN_DRAFT;
+    return (
+      <MainChatComposer
+        input={draft.text}
+        attachments={draft.attachments}
+        uploading={draft.uploading}
+        mainBusy={mainBusy}
+        sending={sending}
+        stopping={stopping}
+        onChange={(text) => updateMainDraft(seg, (d) => ({ ...d, text }))}
+        onRemove={(path) =>
+          updateMainDraft(seg, (d) => ({ ...d, attachments: d.attachments.filter((a) => a.path !== path) }))
+        }
+        onUpload={(files) => pickFiles(seg, files)}
+        onSend={() => sendMain(seg)}
+        onStop={stop}
+        sideButton={live ? <SideQuestionButton side={mainSide} /> : undefined}
+      />
+    );
   }
 
   function sendWorkerChat() {
@@ -1622,20 +1947,159 @@ export function SessionsTab({ taskId }: { taskId: string }) {
   const activeAssets =
     active.role === "worker" && active.intent_id ? intentAssetsByID.get(active.intent_id) : undefined;
 
+  const workspaceRef = React.useRef<HTMLDivElement>(null);
+  const [dockToolbar, setDockToolbar] = React.useState<HTMLDivElement | null>(null);
+  React.useLayoutEffect(() => {
+    if (!liveMode) return;
+    const el = workspaceRef.current;
+    if (!el) return;
+    let frame = 0;
+    const measure = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        el.style.height = `${Math.max(260, (window.visualViewport?.height ?? window.innerHeight) - el.getBoundingClientRect().top - 6)}px`;
+      });
+    };
+    measure();
+    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+    const header = document.querySelector("[data-task-header]");
+    if (header) observer?.observe(header);
+    window.addEventListener("resize", measure);
+    window.visualViewport?.addEventListener("resize", measure);
+    return () => {
+      observer?.disconnect();
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", measure);
+      window.visualViewport?.removeEventListener("resize", measure);
+      el.style.height = "";
+    };
+  }, [liveMode]);
+
   return (
     <TooltipProvider delayDuration={300}>
       {/* 高度预留：页面头部（标题行 + 目标 + Tabs ≈ 7.5rem）+ 内容内边距。手机端 p-4、
         桌面端 lg:p-6，且桌面还要留出滚动余量，所以两档分别预留 10rem / 13rem —— 手机端
         沿用 13rem 会白白吃掉 3rem 的记录高度。 */}
       <div
+        ref={workspaceRef}
+        style={
+          liveMode
+            ? { gridTemplateColumns: liveListHidden ? "minmax(0,1fr)" : `${liveListWidth}px 8px minmax(0,1fr)` }
+            : undefined
+        }
         className={cn(
           "grid h-[calc(100svh-10rem)] min-h-0 grid-cols-1 gap-4",
           listOpen ? "grid-rows-[minmax(0,40svh)_minmax(0,1fr)]" : "grid-rows-[auto_minmax(0,1fr)]",
           "lg:h-[calc(100svh-13rem)] lg:grid-cols-[18rem_1fr] lg:grid-rows-[minmax(0,1fr)]",
+          liveMode &&
+            "grid-rows-[auto_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] gap-0 transition-[height] duration-300 motion-reduce:transition-none",
         )}
       >
+        {liveMode && (
+          <div data-live-toolbar className="col-span-full mb-1 flex min-h-7 min-w-0 items-center gap-2">
+            <Button
+              size="icon-sm"
+              className="size-7"
+              variant="ghost"
+              onClick={() => setLiveListHidden((hidden) => !hidden)}
+              aria-label={t(liveListHidden ? "live.showList" : "live.hideList")}
+              title={t(liveListHidden ? "live.showList" : "live.hideList")}
+            >
+              {liveListHidden ? <PanelLeftOpenIcon /> : <PanelLeftCloseIcon />}
+            </Button>
+            <span className="hidden truncate text-xs text-muted-foreground sm:inline">
+              {activePane === null ? t("live.selectTarget") : t("live.target", { n: activePane + 1 })}
+            </span>
+            <span className="ml-auto text-xs text-muted-foreground">
+              {t("live.workers", {
+                running: workerSessions.filter((item) => item.status === "running").length,
+                done: workerSessions.filter((item) => item.status === "done").length,
+              })}
+            </span>
+            <Button
+              size="sm"
+              variant={graphOpen ? "secondary" : "ghost"}
+              className="h-7 px-2"
+              onClick={toggleGraph}
+              aria-pressed={graphOpen}
+              aria-label={t(graphOpen ? "live.graphClose" : "live.graphAdd")}
+              title={t(graphOpen ? "live.graphClose" : "live.graphAdd")}
+            >
+              <NetworkIcon className="size-3.5" />
+              <span className="text-xs">{t("live.graph")}</span>
+            </Button>
+            <Button
+              size="sm"
+              variant={autoFollow ? "secondary" : "ghost"}
+              className="h-7 px-2 text-xs"
+              aria-pressed={autoFollow}
+              aria-label={t("live.autoFollow")}
+              title={t("live.autoFollowHint")}
+              onClick={toggleAutoFollow}
+            >
+              {t("live.autoFollow")}
+            </Button>
+            <div ref={setDockToolbar} />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2"
+                  aria-label={t("live.layout")}
+                  title={t("live.layout")}
+                >
+                  <PanelsTopLeftIcon className="size-3.5" />
+                  {!customDock && <span className="text-xs">{liveLayout.replace("x", "×")}</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-auto p-2">
+                <fieldset className="flex flex-wrap items-center gap-1" aria-label={t("live.layout")}>
+                  {LIVE_LAYOUTS.map((item) => (
+                    <Button
+                      key={item.id}
+                      variant={!customDock && item.id === liveLayout ? "secondary" : "ghost"}
+                      size="sm"
+                      className="h-7 px-2"
+                      aria-pressed={!customDock && item.id === liveLayout}
+                      aria-label={t("live.layoutOption", { columns: item.columns, rows: item.rows })}
+                      onClick={() => changeLiveLayout(item.id)}
+                    >
+                      {item.id.replace("x", "×")}
+                    </Button>
+                  ))}
+                </fieldset>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="mt-2 w-full"
+                  disabled={!liveTree}
+                  onClick={() => {
+                    if (!liveTree) return;
+                    switchToManualLayout();
+                    setCustomDock(
+                      dockGrid(
+                        [...visibleSlots.map((slot) => slot.id), ...(graphOpen ? [LIVE_GRAPH_ID] : [])],
+                        Math.max(1, Math.ceil(Math.sqrt(visibleSlots.length + (graphOpen ? 1 : 0)))),
+                      ),
+                    );
+                  }}
+                >
+                  {t("live.balancePanes")}
+                </Button>
+              </PopoverContent>
+            </Popover>
+          </div>
+        )}
         {/* Left: session list */}
-        <div className="flex min-h-0 flex-col overflow-hidden rounded-lg border bg-card">
+        <div
+          data-session-list
+          className={cn(
+            "flex min-h-0 flex-col overflow-hidden rounded-lg border bg-card",
+            liveMode && "my-1",
+            liveMode && liveListHidden && "hidden",
+          )}
+        >
           <div className="border-b px-3 py-2">
             <div className="flex items-center justify-between gap-2">
               <button
@@ -1713,7 +2177,7 @@ export function SessionsTab({ taskId }: { taskId: string }) {
             type="auto"
             className={cn(
               "min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]>div]:block!",
-              !listOpen && "max-lg:hidden",
+              !listOpen && !liveMode && "max-lg:hidden",
             )}
           >
             <div className="flex w-full flex-col gap-3 p-2">
@@ -1749,12 +2213,17 @@ export function SessionsTab({ taskId }: { taskId: string }) {
                       return (
                         <SessionItem
                           key={s.id}
+                          onAdd={liveMode ? () => addLiveSession(s.id) : undefined}
                           s={s}
-                          active={s.id === activeId}
+                          active={s.id === (liveMode ? selectedLiveId : activeId)}
                           displayTitle={meta?.title ?? s.title}
                           hasPending={hasPendingForSession(s)}
                           unread={store[keyForSession(s)]?.unread}
                           onClick={() => {
+                            if (liveMode) {
+                              chooseLiveSession(s.id);
+                              return;
+                            }
                             approvalFocus.close();
                             setActiveId(s.id);
                             setListOpen(false); // 手机端选完即收起，把高度还给会话记录
@@ -1794,384 +2263,447 @@ export function SessionsTab({ taskId }: { taskId: string }) {
           </ScrollArea>
         </div>
 
-        {/* Right: transcript */}
-        <SideQuestionWorkspace
-          side={side}
-          label={active.role === "worker" ? `Worker #${active.intent_id} · ${activeDisplayTitle}` : activeDisplayTitle}
-        >
-          <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden rounded-lg border bg-card">
-            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 border-b px-3 py-2 sm:px-4 sm:py-2.5">
-              {(() => {
-                const isWorker = active.role === "worker";
-                const meta = isWorker ? sessionMeta.get(active.id) : undefined;
-                // Worker: the intent moved into the transcript as a message, so the
-                // header shows a stable generic label (intent JSON stays on hover).
-                const title = isWorker ? t("worker.execSession") : active.title;
-                const titleEl = <span className="min-w-0 truncate text-sm font-medium">{title}</span>;
-                return meta?.json ? (
+        {liveMode && !liveListHidden && (
+          <hr
+            aria-label={t("live.resizeList")}
+            aria-orientation="vertical"
+            aria-valuemin={240}
+            aria-valuemax={480}
+            aria-valuenow={liveListWidth}
+            tabIndex={0}
+            className="h-full w-2 cursor-col-resize touch-none border-0 rounded hover:bg-accent focus-visible:bg-accent"
+            onKeyDown={(e) => {
+              if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return;
+              e.preventDefault();
+              setLiveListWidth((width) =>
+                e.key === "Home"
+                  ? 240
+                  : e.key === "End"
+                    ? 480
+                    : Math.max(240, Math.min(480, width + (e.key === "ArrowRight" ? 20 : -20))),
+              );
+            }}
+            onPointerDown={(e) => {
+              if (e.button !== 0) return;
+              e.preventDefault();
+              const el = e.currentTarget,
+                start = e.clientX,
+                width = liveListWidth;
+              el.setPointerCapture(e.pointerId);
+              el.onpointermove = (event) =>
+                setLiveListWidth(Math.max(240, Math.min(480, width + event.clientX - start)));
+              const end = () => {
+                el.onpointermove = null;
+              };
+              el.onpointerup = end;
+              el.onpointercancel = end;
+              el.onlostpointercapture = end;
+            }}
+          />
+        )}
+        {liveMode && (
+          <div className="flex min-h-0 min-w-0 flex-col" data-live-workspace>
+            <SideQuestionWorkspace side={mainSide} label={t("role.mainagent")}>
+              {!liveTree ? (
+                <button
+                  type="button"
+                  onClick={() => setLiveListHidden(false)}
+                  className="m-1 flex flex-1 items-center justify-center rounded-lg border border-dashed p-8 text-sm text-muted-foreground"
+                  data-empty-dock
+                  onDragOver={(e) => {
+                    if (e.dataTransfer.types.includes(SESSION_DRAG_TYPE)) {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "copy";
+                    }
+                  }}
+                  onDrop={(e) => {
+                    if (e.dataTransfer.types.includes(SESSION_DRAG_TYPE)) {
+                      e.preventDefault();
+                      addLiveSession(e.dataTransfer.getData(SESSION_DRAG_TYPE));
+                    }
+                  }}
+                >
+                  {t("live.emptyWorkspace")}
+                </button>
+              ) : (
+                <SessionDockWorkspace
+                  externalDrop={{ type: SESSION_DRAG_TYPE, label: t("live.addPane"), onDrop: addLiveSession }}
+                  toolbarContainer={dockToolbar}
+                  tree={liveTree}
+                  onChange={(tree) => {
+                    switchToManualLayout();
+                    setCustomDock(tree);
+                  }}
+                  panes={[
+                    ...(graphOpen
+                      ? [
+                          {
+                            id: LIVE_GRAPH_ID,
+                            label: t("live.graph"),
+                            minimumSize: { width: 320, height: 240 },
+                            render: (grip: DockGripProps) => (
+                              <LiveGraphPane key={taskId} taskId={taskId} grip={grip} onClose={toggleGraph} />
+                            ),
+                          },
+                        ]
+                      : []),
+                    ...visibleSlots.map((slot, index) => {
+                      const session = sessions.find((item) => item.id === slot.sessionId);
+                      const key = session ? keyForSession(session) : "";
+                      const title = session ? (sessionMeta.get(session.id)?.title ?? session.title) : "";
+                      return {
+                        id: slot.id,
+                        label: `${index + 1}. ${title}`,
+                        render: (dockGrip: DockGripProps) => (
+                          <LiveSessionPane
+                            composer={session?.role === "mainagent" ? mainComposer(session.seg ?? 0, true) : undefined}
+                            dockGrip={{
+                              ...dockGrip,
+                              onToggleExpand: () => {
+                                switchToManualLayout();
+                                dockGrip.onToggleExpand?.();
+                              },
+                            }}
+                            key={`${slot.id}:${slot.sessionId}`}
+                            paneId={slot.id}
+                            number={index + 1}
+                            taskId={taskId}
+                            session={session}
+                            title={title}
+                            history={store[key]}
+                            choices={choices}
+                            active={activePane === index}
+                            pinned={slot.pinned}
+                            connected={sseLive || MOCK}
+                            pendingApproval={!!session && hasPendingForSession(session)}
+                            memory={liveScrollMemory}
+                            onActivate={() => setActivePane(index)}
+                            onClose={() => closeLivePane(slot.id)}
+                            onSelect={(id) => chooseLiveSession(id, index)}
+                            onPin={() => {
+                              switchToManualLayout();
+                              setLiveSlots((slots) =>
+                                slots.map((item) => (item.id === slot.id ? { ...item, pinned: !item.pinned } : item)),
+                              );
+                            }}
+                            onOpen={() => {
+                              if (!session) return;
+                              setActiveId(session.id);
+                              approvalFocus.close();
+                              onLiveModeChange?.(false);
+                            }}
+                            onRetry={() => loadSession(key)}
+                            onLoadEarlier={(viewport) => loadEarlier(key, viewport)}
+                            onFollowing={(following) => liveReadingRef.current.set(slot.id, { key, following })}
+                          />
+                        ),
+                      };
+                    }),
+                  ]}
+                />
+              )}
+            </SideQuestionWorkspace>
+          </div>
+        )}
+        {/* Right: original interactive session, kept mounted to preserve drafts. */}
+        <div className={cn("flex min-h-0 min-w-0", liveMode && "hidden")}>
+          <SideQuestionWorkspace
+            side={{ ...side, open: !liveMode && side.open }}
+            label={
+              active.role === "worker" ? `Worker #${active.intent_id} · ${activeDisplayTitle}` : activeDisplayTitle
+            }
+          >
+            <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden rounded-lg border bg-card">
+              <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 border-b px-3 py-2 sm:px-4 sm:py-2.5">
+                {(() => {
+                  const isWorker = active.role === "worker";
+                  const meta = isWorker ? sessionMeta.get(active.id) : undefined;
+                  // Worker: the intent moved into the transcript as a message, so the
+                  // header shows a stable generic label (intent JSON stays on hover).
+                  const title = isWorker ? t("worker.execSession") : active.title;
+                  const titleEl = <span className="min-w-0 truncate text-sm font-medium">{title}</span>;
+                  return meta?.json ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>{titleEl}</TooltipTrigger>
+                      <TooltipContent side="bottom" align="start" className="max-h-80 max-w-sm overflow-auto p-0">
+                        <pre className="p-2 text-[10px] leading-relaxed">{JSON.stringify(meta.json, null, 2)}</pre>
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    titleEl
+                  );
+                })()}
+                <SideQuestionButton side={side} />
+                {activeResolution && (
                   <Tooltip>
-                    <TooltipTrigger asChild>{titleEl}</TooltipTrigger>
-                    <TooltipContent side="bottom" align="start" className="max-h-80 max-w-sm overflow-auto p-0">
-                      <pre className="p-2 text-[10px] leading-relaxed">{JSON.stringify(meta.json, null, 2)}</pre>
-                    </TooltipContent>
-                  </Tooltip>
-                ) : (
-                  titleEl
-                );
-              })()}
-              <SideQuestionButton side={side} />
-              {activeResolution && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge
-                      variant="outline"
-                      className="max-w-28 shrink-0 font-normal"
-                      aria-label={
-                        activeResolution.available
-                          ? t("resolution.current", {
-                              label: resolutionLabel(activeResolution, t("resolution.unnamed")),
-                            })
-                          : t("resolution.unavailable")
-                      }
-                    >
-                      <span className="truncate">
-                        {activeResolution.available
-                          ? resolutionLabel(activeResolution, t("resolution.unnamed"))
-                          : t("resolution.unavailable")}
-                      </span>
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="max-w-xs [overflow-wrap:anywhere]">
-                    {activeResolution.available
-                      ? [resolutionLabel(activeResolution, t("resolution.unnamed")), activeResolution.model]
-                          .filter(Boolean)
-                          .join(" / ")
-                      : activeResolution.reason || t("resolution.noConfig")}
-                  </TooltipContent>
-                </Tooltip>
-              )}
-              {activeAssets && activeAssets.length > 0 && <WorkerAssetBadge assets={activeAssets} />}
-              {active.inherited && active.source_task_id && (
-                <Badge variant="outline">{t("header.sourceTask", { id: active.source_task_id })}</Badge>
-              )}
-              {active.live && (
-                <span className="inline-flex items-center gap-1 rounded bg-blue-500/15 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400">
-                  <span className="size-1 animate-pulse rounded-full bg-blue-500" />
-                  {t("sse.live")}
-                </span>
-              )}
-              {activeState?.hasMore && (
-                <span className="text-[10px] text-muted-foreground" title={t("header.olderHistoryTitle")}>
-                  {t("header.olderHistoryLabel")}
-                </span>
-              )}
-              <div className="ml-auto flex min-w-0 max-w-full items-center justify-end gap-x-3 gap-y-1 text-xs text-muted-foreground max-sm:w-full max-sm:flex-wrap">
-                {tokenTotal.any && (
-                  <Tooltip>
-                    {/* 手机端用短标签（入/缓/出）：长标签会把这一行撑成两行，进一步压缩记录区。 */}
                     <TooltipTrigger asChild>
-                      <span className="inline-flex min-w-0 items-center">
-                        <TokenMetrics
-                          input={tokenTotal.i}
-                          cache={tokenTotal.cr}
-                          output={tokenTotal.o}
-                          labels="short"
-                          className="sm:hidden"
-                        />
-                        <TokenMetrics
-                          input={tokenTotal.i}
-                          cache={tokenTotal.cr}
-                          output={tokenTotal.o}
-                          labels="long"
-                          className="max-sm:hidden"
-                        />
-                      </span>
+                      <Badge
+                        variant="outline"
+                        className="max-w-28 shrink-0 font-normal"
+                        aria-label={
+                          activeResolution.available
+                            ? t("resolution.current", {
+                                label: resolutionLabel(activeResolution, t("resolution.unnamed")),
+                              })
+                            : t("resolution.unavailable")
+                        }
+                      >
+                        <span className="truncate">
+                          {activeResolution.available
+                            ? resolutionLabel(activeResolution, t("resolution.unnamed"))
+                            : t("resolution.unavailable")}
+                        </span>
+                      </Badge>
                     </TooltipTrigger>
-                    <TooltipContent>
-                      {t("tokens.full", {
-                        input: activeTokens.input_tokens.toLocaleString(),
-                        output: activeTokens.output_tokens.toLocaleString(),
-                        cacheRead: activeTokens.cache_read_tokens.toLocaleString(),
-                        cacheWrite: activeTokens.cache_write_tokens.toLocaleString(),
-                      })}
+                    <TooltipContent side="bottom" className="max-w-xs [overflow-wrap:anywhere]">
+                      {activeResolution.available
+                        ? [resolutionLabel(activeResolution, t("resolution.unnamed")), activeResolution.model]
+                            .filter(Boolean)
+                            .join(" / ")
+                        : activeResolution.reason || t("resolution.noConfig")}
                     </TooltipContent>
                   </Tooltip>
                 )}
-                {runDuration != null && (
-                  <span className="inline-flex items-center gap-1" title={t("header.runDurationTitle")}>
-                    <ClockIcon className="size-3" />
-                    {fmtDuration(runDuration)}
+                {activeAssets && activeAssets.length > 0 && <WorkerAssetBadge assets={activeAssets} />}
+                {active.inherited && active.source_task_id && (
+                  <Badge variant="outline">{t("header.sourceTask", { id: active.source_task_id })}</Badge>
+                )}
+                {active.live && (
+                  <span className="inline-flex items-center gap-1 rounded bg-blue-500/15 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400">
+                    <span className="size-1 animate-pulse rounded-full bg-blue-500" />
+                    {t("sse.live")}
                   </span>
                 )}
-                {isMain && <span>{t("header.interactive")}</span>}
-              </div>
-            </div>
-            {(() => {
-              const dm = active.role === "worker" ? sessionMeta.get(active.id) : undefined;
-              if (!dm?.deleted) return null;
-              return (
-                <div className="flex items-start gap-2 border-b border-destructive/30 bg-destructive/5 px-4 py-2.5 text-xs">
-                  <Trash2Icon className="mt-0.5 size-3.5 shrink-0 text-destructive" />
-                  <div className="min-w-0">
-                    <span className="font-medium text-destructive">{t("deletedNotice.heading")}</span>
-                    <span className="text-muted-foreground">{t("deletedNotice.detail")}</span>
-                    {dm.deleteReason && (
-                      <p className="mt-1 break-words text-foreground">
-                        <span className="text-muted-foreground">{t("deletedNotice.reason")}</span>
-                        {dm.deleteReason}
-                      </p>
-                    )}
-                  </div>
+                {activeState?.hasMore && (
+                  <span className="text-[10px] text-muted-foreground" title={t("header.olderHistoryTitle")}>
+                    {t("header.olderHistoryLabel")}
+                  </span>
+                )}
+                <div className="ml-auto flex min-w-0 max-w-full items-center justify-end gap-x-3 gap-y-1 text-xs text-muted-foreground max-sm:w-full max-sm:flex-wrap">
+                  {tokenTotal.any && (
+                    <Tooltip>
+                      {/* 手机端用短标签（入/缓/出）：长标签会把这一行撑成两行，进一步压缩记录区。 */}
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex min-w-0 items-center">
+                          <TokenMetrics
+                            input={tokenTotal.i}
+                            cache={tokenTotal.cr}
+                            output={tokenTotal.o}
+                            labels="short"
+                            className="sm:hidden"
+                          />
+                          <TokenMetrics
+                            input={tokenTotal.i}
+                            cache={tokenTotal.cr}
+                            output={tokenTotal.o}
+                            labels="long"
+                            className="max-sm:hidden"
+                          />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {t("tokens.full", {
+                          input: activeTokens.input_tokens.toLocaleString(),
+                          output: activeTokens.output_tokens.toLocaleString(),
+                          cacheRead: activeTokens.cache_read_tokens.toLocaleString(),
+                          cacheWrite: activeTokens.cache_write_tokens.toLocaleString(),
+                        })}
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                  {runDuration != null && (
+                    <span className="inline-flex items-center gap-1" title={t("header.runDurationTitle")}>
+                      <ClockIcon className="size-3" />
+                      {fmtDuration(runDuration)}
+                    </span>
+                  )}
+                  {isMain && <span>{t("header.interactive")}</span>}
                 </div>
-              );
-            })()}
-            <ApprovalExecutionFocus
-              focus={{
-                ...approvalFocus,
-                close: () => {
-                  setActiveId(activeId);
-                  approvalFocus.close();
-                },
-              }}
-              history={focusHistory}
-            />
-            {/* Force Radix's internal viewport wrapper (display:table, sizes to content)
+              </div>
+              {(() => {
+                const dm = active.role === "worker" ? sessionMeta.get(active.id) : undefined;
+                if (!dm?.deleted) return null;
+                return (
+                  <div className="flex items-start gap-2 border-b border-destructive/30 bg-destructive/5 px-4 py-2.5 text-xs">
+                    <Trash2Icon className="mt-0.5 size-3.5 shrink-0 text-destructive" />
+                    <div className="min-w-0">
+                      <span className="font-medium text-destructive">{t("deletedNotice.heading")}</span>
+                      <span className="text-muted-foreground">{t("deletedNotice.detail")}</span>
+                      {dm.deleteReason && (
+                        <p className="mt-1 break-words text-foreground">
+                          <span className="text-muted-foreground">{t("deletedNotice.reason")}</span>
+                          {dm.deleteReason}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+              <ApprovalExecutionFocus
+                focus={{
+                  ...approvalFocus,
+                  close: () => {
+                    setActiveId(activeId);
+                    approvalFocus.close();
+                  },
+                }}
+                history={focusHistory}
+              />
+              {/* Force Radix's internal viewport wrapper (display:table, sizes to content)
             to block so wide/unbreakable steps (long commands, code, URLs) can't blow
             out the width and defeat the truncation below — the transcript wraps to
             the panel instead of overflowing horizontally. */}
-            <ScrollArea type="auto" className="min-h-0 min-w-0 flex-1 [&_[data-slot=scroll-area-viewport]>div]:block!">
-              <div className="min-w-0 max-w-full p-4" ref={contentRef}>
-                {activeState?.loadingMore && (
-                  <div className="flex items-center justify-center gap-2 pb-2 text-xs text-muted-foreground">
-                    <Loader2Icon className="size-3.5 animate-spin" />
-                    {t("transcript.loadingMore")}
-                  </div>
-                )}
-                {showLoader ? (
-                  <div className="flex items-center gap-2 pl-9 text-xs text-muted-foreground">
-                    <Loader2Icon className="size-3.5 animate-spin" />
-                    {t("transcript.loadingActivity")}
-                  </div>
-                ) : activeState?.error ? (
-                  <div className="flex items-center gap-2 pl-9 text-xs text-red-500">
-                    <CircleXIcon className="size-3.5" />
-                    {t("transcript.loadError", { error: activeState.error })}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 px-2 text-xs"
-                      onClick={() => loadSession(activeKey)}
-                    >
-                      {t("transcript.retry")}
-                    </Button>
-                  </div>
-                ) : activity.length ? (
-                  <Transcript
-                    activity={activity}
-                    live={active.live}
-                    taskId={taskId}
-                    chat={isMain}
-                    focusedSeq={focusHistory.ready ? approvalFocus.state?.source?.seq : undefined}
-                  />
-                ) : (
-                  <div className="pl-9 text-xs text-muted-foreground">
-                    {isMain ? t("transcript.emptyMain") : t("transcript.emptyWorker")}
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-            {isMain ? (
-              <div className="border-t p-3">
-                {attachments.length > 0 && (
-                  <div className="mb-2 flex flex-wrap gap-1.5">
-                    {attachments.map((a) => (
-                      <div
-                        key={a.path}
-                        className="flex items-center gap-1.5 rounded-md border bg-muted/50 px-2 py-1 text-xs"
-                        title={a.path}
+              <ScrollArea
+                type="auto"
+                className="min-h-0 min-w-0 flex-1 [&_[data-slot=scroll-area-viewport]>div]:block!"
+              >
+                <div className="min-w-0 max-w-full p-4" ref={contentRef}>
+                  {activeState?.loadingMore && (
+                    <div className="flex items-center justify-center gap-2 pb-2 text-xs text-muted-foreground">
+                      <Loader2Icon className="size-3.5 animate-spin" />
+                      {t("transcript.loadingMore")}
+                    </div>
+                  )}
+                  {showLoader ? (
+                    <div className="flex items-center gap-2 pl-9 text-xs text-muted-foreground">
+                      <Loader2Icon className="size-3.5 animate-spin" />
+                      {t("transcript.loadingActivity")}
+                    </div>
+                  ) : activeState?.error ? (
+                    <div className="flex items-center gap-2 pl-9 text-xs text-red-500">
+                      <CircleXIcon className="size-3.5" />
+                      {t("transcript.loadError", { error: activeState.error })}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => loadSession(activeKey)}
                       >
-                        <PaperclipIcon className="size-3 shrink-0 text-primary" />
-                        <span className="max-w-[160px] truncate">{a.name}</span>
-                        <span className="text-muted-foreground">{fmtBytes(a.size)}</span>
-                        <button
-                          type="button"
-                          className="ml-0.5 text-muted-foreground hover:text-foreground"
-                          onClick={() => setAttachments((p) => p.filter((x) => x.path !== a.path))}
-                          title={t("composer.attachmentRemove")}
-                        >
-                          <XIcon className="size-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => void pickFiles(e.target.files)}
-                />
-                <InputGroup className="min-h-9 has-disabled:opacity-100">
-                  <MentionTextarea
-                    inputGroup
-                    rows={1}
-                    aria-label={t("composer.mainAria")}
-                    placeholder={mainBusy ? t("composer.mainBusyPlaceholder") : t("composer.mainPlaceholder")}
-                    value={input}
-                    disabled={sending}
-                    onValueChange={setInput}
-                    onKeyDown={(e) => {
-                      if (!shouldSubmitOnKey(e, sendMode)) return;
-                      e.preventDefault();
-                      send();
-                    }}
-                    className="max-h-36 min-h-9 overflow-y-auto"
-                  />
-                  <InputGroupAddon align="block-end">
-                    <InputGroupButton
-                      size="icon-xs"
-                      variant="ghost"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={mainBusy || uploading}
-                      title={t("composer.uploadTitle")}
-                      aria-label={t("composer.uploadTitle")}
-                    >
-                      {uploading ? <Loader2Icon className="animate-spin" /> : <PaperclipIcon />}
-                    </InputGroupButton>
-                    {mainBusy && isBtwCommand(input) && (
-                      <InputGroupButton size="icon-xs" onClick={send} aria-label={t("composer.sideQuestion")}>
-                        <ArrowUpIcon />
-                      </InputGroupButton>
-                    )}
-                    {mainBusy ? (
-                      <InputGroupButton
-                        className="ml-auto"
-                        size="icon-xs"
-                        variant="destructive"
-                        onClick={stop}
-                        disabled={stopping}
-                        title={t("composer.stopTitle")}
-                        aria-label={t("composer.stopTitle")}
-                      >
-                        {stopping ? <Loader2Icon className="animate-spin" /> : <SquareIcon />}
-                      </InputGroupButton>
-                    ) : (
-                      <InputGroupButton
-                        className="ml-auto"
-                        size="icon-xs"
-                        variant="default"
-                        onClick={send}
-                        disabled={(!input.trim() && attachments.length === 0) || sending}
-                        title={t("composer.sendTitle")}
-                        aria-label={t("composer.sendTitle")}
-                      >
-                        {sending ? <Loader2Icon className="animate-spin" /> : <ArrowUpIcon />}
-                      </InputGroupButton>
-                    )}
-                  </InputGroupAddon>
-                </InputGroup>
-              </div>
-            ) : active.role === "worker" &&
-              !active.inherited &&
-              (active.status === "running" || active.status === "paused") ? (
-              <div className="border-t p-3">
-                <InputGroup className="min-h-9 has-disabled:opacity-100">
-                  <MentionTextarea
-                    inputGroup
-                    rows={1}
-                    aria-label={t("composer.workerAria", { id: active.intent_id ?? "" })}
-                    placeholder={t("composer.workerPlaceholder", { id: active.intent_id ?? "" })}
-                    value={workerMessage}
-                    onValueChange={(value) => {
-                      setWorkerMessage(value);
-                      setWorkerMessageRequestId("");
-                    }}
-                    onKeyDown={(event) => {
-                      if (!shouldSubmitOnKey(event, sendMode)) return;
-                      event.preventDefault();
-                      sendWorkerChat();
-                    }}
-                    disabled={workerMessageSending}
-                    aria-invalid={workerMessageCharCount(workerMessage) > MAX_WORKER_MESSAGE_CHARS}
-                    className="max-h-36 min-h-9 overflow-y-auto"
-                  />
-                  <InputGroupAddon align="block-end">
-                    <span
-                      className={cn(
-                        "px-1 text-[10px] tabular-nums text-muted-foreground",
-                        workerMessageCharCount(workerMessage) > MAX_WORKER_MESSAGE_CHARS && "text-destructive",
-                      )}
-                    >
-                      {workerMessageCharCount(workerMessage)}/{MAX_WORKER_MESSAGE_CHARS}
-                    </span>
-                    {active.status === "running" && isBtwCommand(workerMessage) && (
-                      <InputGroupButton size="icon-xs" onClick={sendWorkerChat} aria-label={t("composer.sideQuestion")}>
-                        <ArrowUpIcon />
-                      </InputGroupButton>
-                    )}
-                    {active.status === "running" ? (
-                      <InputGroupButton
-                        className="ml-auto"
-                        size="icon-xs"
-                        variant="destructive"
-                        onClick={() => void controlWorker(active, "pause")}
-                        disabled={controllingIntent === active.intent_id}
-                        title={t("composer.pauseTitle")}
-                        aria-label={t("composer.pauseTitle")}
-                      >
-                        {controllingIntent === active.intent_id ? (
-                          <Loader2Icon className="animate-spin" />
-                        ) : (
-                          <SquareIcon />
+                        {t("transcript.retry")}
+                      </Button>
+                    </div>
+                  ) : activity.length ? (
+                    <Transcript
+                      activity={activity}
+                      live={active.live}
+                      taskId={taskId}
+                      chat={isMain}
+                      focusedSeq={focusHistory.ready ? approvalFocus.state?.source?.seq : undefined}
+                    />
+                  ) : (
+                    <div className="pl-9 text-xs text-muted-foreground">
+                      {isMain ? t("transcript.emptyMain") : t("transcript.emptyWorker")}
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+              {isMain ? (
+                mainComposer(active.seg ?? 0)
+              ) : active.role === "worker" &&
+                !active.inherited &&
+                (active.status === "running" || active.status === "paused") ? (
+                <div className="border-t p-3">
+                  <InputGroup className="min-h-9 has-disabled:opacity-100">
+                    <MentionTextarea
+                      inputGroup
+                      rows={1}
+                      aria-label={t("composer.workerAria", { id: active.intent_id ?? "" })}
+                      placeholder={t("composer.workerPlaceholder", { id: active.intent_id ?? "" })}
+                      value={workerMessage}
+                      onValueChange={(value) => {
+                        setWorkerMessage(value);
+                        setWorkerMessageRequestId("");
+                      }}
+                      onKeyDown={(event) => {
+                        if (!shouldSubmitOnKey(event, sendMode)) return;
+                        event.preventDefault();
+                        sendWorkerChat();
+                      }}
+                      disabled={workerMessageSending}
+                      aria-invalid={workerMessageCharCount(workerMessage) > MAX_WORKER_MESSAGE_CHARS}
+                      className="max-h-36 min-h-9 overflow-y-auto"
+                    />
+                    <InputGroupAddon align="block-end">
+                      <span
+                        className={cn(
+                          "px-1 text-[10px] tabular-nums text-muted-foreground",
+                          workerMessageCharCount(workerMessage) > MAX_WORKER_MESSAGE_CHARS && "text-destructive",
                         )}
-                      </InputGroupButton>
-                    ) : (
-                      <>
+                      >
+                        {workerMessageCharCount(workerMessage)}/{MAX_WORKER_MESSAGE_CHARS}
+                      </span>
+                      {active.status === "running" && isBtwCommand(workerMessage) && (
+                        <InputGroupButton
+                          size="icon-xs"
+                          onClick={sendWorkerChat}
+                          aria-label={t("composer.sideQuestion")}
+                        >
+                          <ArrowUpIcon />
+                        </InputGroupButton>
+                      )}
+                      {active.status === "running" ? (
                         <InputGroupButton
                           className="ml-auto"
-                          size="xs"
-                          variant="ghost"
-                          onClick={() => void controlWorker(active, "resume")}
-                          disabled={controllingIntent === active.intent_id || workerMessageSending}
-                          title={t("composer.resumeTitle")}
-                          aria-label={t("composer.resumeAria")}
+                          size="icon-xs"
+                          variant="destructive"
+                          onClick={() => void controlWorker(active, "pause")}
+                          disabled={controllingIntent === active.intent_id}
+                          title={t("composer.pauseTitle")}
+                          aria-label={t("composer.pauseTitle")}
                         >
                           {controllingIntent === active.intent_id ? (
                             <Loader2Icon className="animate-spin" />
                           ) : (
-                            t("composer.resumeLabel")
+                            <SquareIcon />
                           )}
                         </InputGroupButton>
-                        <InputGroupButton
-                          size="icon-xs"
-                          variant="default"
-                          onClick={sendWorkerChat}
-                          disabled={
-                            workerMessageSending ||
-                            !workerMessage.trim() ||
-                            workerMessageCharCount(workerMessage) > MAX_WORKER_MESSAGE_CHARS
-                          }
-                          title={t("composer.sendTitle")}
-                          aria-label={t("composer.sendTitle")}
-                        >
-                          {workerMessageSending ? <Spinner /> : <ArrowUpIcon />}
-                        </InputGroupButton>
-                      </>
-                    )}
-                  </InputGroupAddon>
-                </InputGroup>
-              </div>
-            ) : (
-              <div className="flex items-center border-t px-4 py-2">
-                <TodoPopover
-                  seq={latestTodoSeq}
-                  fetchDetail={(seq) => api.activityDetail(seq, taskId).then((r) => r.detail ?? "")}
-                />
-              </div>
-            )}
-          </div>
-        </SideQuestionWorkspace>
+                      ) : (
+                        <>
+                          <InputGroupButton
+                            className="ml-auto"
+                            size="xs"
+                            variant="ghost"
+                            onClick={() => void controlWorker(active, "resume")}
+                            disabled={controllingIntent === active.intent_id || workerMessageSending}
+                            title={t("composer.resumeTitle")}
+                            aria-label={t("composer.resumeAria")}
+                          >
+                            {controllingIntent === active.intent_id ? (
+                              <Loader2Icon className="animate-spin" />
+                            ) : (
+                              t("composer.resumeLabel")
+                            )}
+                          </InputGroupButton>
+                          <InputGroupButton
+                            size="icon-xs"
+                            variant="default"
+                            onClick={sendWorkerChat}
+                            disabled={
+                              workerMessageSending ||
+                              !workerMessage.trim() ||
+                              workerMessageCharCount(workerMessage) > MAX_WORKER_MESSAGE_CHARS
+                            }
+                            title={t("composer.sendTitle")}
+                            aria-label={t("composer.sendTitle")}
+                          >
+                            {workerMessageSending ? <Spinner /> : <ArrowUpIcon />}
+                          </InputGroupButton>
+                        </>
+                      )}
+                    </InputGroupAddon>
+                  </InputGroup>
+                </div>
+              ) : (
+                <div className="flex items-center border-t px-4 py-2">
+                  <TodoPopover
+                    seq={latestTodoSeq}
+                    fetchDetail={(seq) => api.activityDetail(seq, taskId).then((r) => r.detail ?? "")}
+                  />
+                </div>
+              )}
+            </div>
+          </SideQuestionWorkspace>
+        </div>
         <AlertDialog
           open={cancelIntent !== null}
           onOpenChange={(open) => {

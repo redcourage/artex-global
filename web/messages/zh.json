@@ -12,12 +12,12 @@
       "submitting": "登录中...",
       "title": "登录",
       "username": "用户名",
-      "welcome": "欢迎回来，请输入密码以继续使用 ARTEX"
+      "welcome": "欢迎回来，请输入密码以继续使用 CryptoLab ARTEX"
     },
     "setup": {
       "confirmPassword": "确认密码",
       "confirmPlaceholder": "再次输入密码",
-      "desc": "首次使用 ARTEX，请为账户设置一个登录密码（至少 8 位）",
+      "desc": "首次使用 CryptoLab ARTEX，请为账户设置一个登录密码（至少 8 位）",
       "errorBackend": "无法连接到后端服务",
       "errorInit": "初始化失败",
       "errorMismatch": "两次输入的密码不一致",
@@ -714,7 +714,9 @@
           "cidr": "CIDR 网段"
         }
       }
-    }
+    },
+    "liveEnter": "实时面板",
+    "liveExit": "返回会话"
   },
   "retest": {
     "panel": {
@@ -3108,6 +3110,64 @@
       "cancel": "取消",
       "starting": "开启中…",
       "start": "开启新会话"
+    },
+    "live": {
+      "graph": "图谱",
+      "graphAdd": "添加探索图谱面板",
+      "graphClose": "关闭图谱面板",
+      "graphLoading": "正在加载图谱…",
+      "graphError": "图谱更新失败",
+      "graphRetry": "重试",
+      "graphDetails": "显示图例和小地图",
+      "balancePanes": "均匀排列所有面板",
+      "addPane": "添加面板",
+      "addSession": "在面板中打开 {title}",
+      "dragToAdd": "拖入工作区以添加面板",
+      "autoFollow": "自动排列",
+      "autoFollowHint": "左侧显示Planner，右侧最多两个运行中的Worker。完成后切换到其他运行会话。手动操作将暂停自动排列。",
+      "expandPane": "放大面板",
+      "restorePane": "恢复面板 (Esc)",
+      "closePane": "关闭面板（代理继续运行）",
+      "emptyWorkspace": "将会话拖到这里，或点击列表中的 +。",
+      "pane": "会话窗格 {n}",
+      "selectPane": "选择窗格 {n}",
+      "choose": "选择会话",
+      "search": "搜索会话…",
+      "noMatches": "没有匹配的会话",
+      "unpin": "取消固定会话",
+      "pin": "固定会话",
+      "openSession": "打开对话和控制",
+      "approval": "等待审批",
+      "older": "加载更早记录",
+      "empty": "从列表或菜单中选择会话。新Worker会填入空窗格。",
+      "latest": "跟随最新记录",
+      "pinnedHint": "请先取消固定此窗格，再切换会话。",
+      "pinnedLayout": "请先取消固定即将隐藏的窗格，再缩减布局。",
+      "resizeList": "调整会话列表宽度",
+      "showList": "显示会话列表",
+      "hideList": "收起会话列表",
+      "target": "当前窗格 {n}",
+      "workers": "Worker · 运行 {running} · 完成 {done}",
+      "layout": "会话布局",
+      "layoutOption": "{columns}列 × {rows}行",
+      "dock": {
+        "hint": "拖动手柄 · 边缘拆分 · 中央交换 · Esc 取消",
+        "arrange": "面板布局",
+        "source": "移动面板",
+        "target": "目标面板",
+        "position": "位置",
+        "left": "左侧",
+        "right": "右侧",
+        "top": "上方",
+        "bottom": "下方",
+        "center": "交换位置",
+        "apply": "移动",
+        "restore": "恢复面板",
+        "moved": "面板已移动",
+        "grip": "拖动以移动面板。键盘操作请使用面板布局菜单。",
+        "resize": "调整面板大小"
+      },
+      "selectTarget": "先选择要切换会话的面板"
     }
   },
   "settingsPage": {

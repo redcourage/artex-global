@@ -1,0 +1,96 @@
+/*
+label: Briefing Light
+value: briefing-light
+*/
+
+:root[data-theme-preset="briefing-light"] {
+  --background: #f5f5f5;
+  --foreground: #202020;
+  --card: #ffffff;
+  --card-foreground: #202020;
+  --popover: #ffffff;
+  --popover-foreground: #202020;
+  --primary: #292929;
+  --primary-foreground: #ffffff;
+  --secondary: #ededed;
+  --secondary-foreground: #202020;
+  --muted: #ededed;
+  --muted-foreground: #595959;
+  --accent: #e3e3e3;
+  --accent-foreground: #202020;
+  --destructive: #303030;
+  --border: #969696;
+  --input: #969696;
+  --ring: #292929;
+  --sidebar: #f2f2f2;
+  --sidebar-foreground: #202020;
+  --sidebar-primary: #292929;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e3e3e3;
+  --sidebar-accent-foreground: #202020;
+  --sidebar-border: #969696;
+  --sidebar-ring: #292929;
+  --demo-success: #454545;
+  --demo-warning: #454545;
+  --demo-danger: #303030;
+  --radius: 0.625rem;
+  --chart-1: #292929;
+  --chart-2: #454545;
+  --chart-3: #454545;
+  --chart-4: #303030;
+  --chart-5: #595959;
+  --shadow-2xs: none;
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+  --shadow-2xl: none;
+}
+
+.dark:root[data-theme-preset="briefing-light"] {
+  --background: #101820;
+  --foreground: #f0f5fa;
+  --card: #1a2735;
+  --card-foreground: #f0f5fa;
+  --popover: #1a2735;
+  --popover-foreground: #f0f5fa;
+  --primary: #9bc8ff;
+  --primary-foreground: #102238;
+  --secondary: #29394b;
+  --secondary-foreground: #f0f5fa;
+  --muted: #29394b;
+  --muted-foreground: #bdccdf;
+  --accent: #314d6d;
+  --accent-foreground: #f0f5fa;
+  --destructive: #ffacb7;
+  --border: #73879e;
+  --input: #73879e;
+  --ring: #9bc8ff;
+  --sidebar: #14202d;
+  --sidebar-foreground: #f0f5fa;
+  --sidebar-primary: #9bc8ff;
+  --sidebar-primary-foreground: #102238;
+  --sidebar-accent: #314d6d;
+  --sidebar-accent-foreground: #f0f5fa;
+  --sidebar-border: #73879e;
+  --sidebar-ring: #9bc8ff;
+  --demo-success: #91dfba;
+  --demo-warning: #f1d08c;
+  --demo-danger: #ffacb7;
+  --radius: 0.625rem;
+  --chart-1: #9bc8ff;
+  --chart-2: #91dfba;
+  --chart-3: #f1d08c;
+  --chart-4: #ffacb7;
+  --chart-5: #bdccdf;
+  --shadow-2xs: none;
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+  --shadow-2xl: none;
+}

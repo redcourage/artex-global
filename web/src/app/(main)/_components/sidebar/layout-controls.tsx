@@ -127,7 +127,7 @@ export function LayoutControls() {
                               (resolvedThemeMode ?? "light") === "dark" ? preset.primary.dark : preset.primary.light,
                           }}
                         />
-                        {preset.label}
+                        {preset.value === "redcourage" ? `redcourage-${resolvedThemeMode ?? "light"}` : preset.label}
                       </SelectItem>
                     ))}
                   </SelectGroup>

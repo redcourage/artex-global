@@ -20,11 +20,51 @@ export const THEME_PRESET_OPTIONS = [
     },
   },
   {
+    label: "Briefing Light",
+    value: "briefing-light",
+    primary: {
+      light: "#292929",
+      dark: "#9bc8ff",
+    },
+  },
+  {
     label: "Brutalist",
     value: "brutalist",
     primary: {
       light: "oklch(0.6489 0.237 26.9728)",
       dark: "oklch(0.7044 0.1872 23.1858)",
+    },
+  },
+  {
+    label: "Studio Contrast",
+    value: "contrast-black",
+    primary: {
+      light: "#171717",
+      dark: "#ffffff",
+    },
+  },
+  {
+    label: "Graphite",
+    value: "graphite-pro",
+    primary: {
+      light: "#292929",
+      dark: "#b9cceb",
+    },
+  },
+  {
+    label: "Operations Navy",
+    value: "operations-navy",
+    primary: {
+      light: "#292929",
+      dark: "#78cfff",
+    },
+  },
+  {
+    label: "redcourage",
+    value: "redcourage",
+    primary: {
+      light: "#292929",
+      dark: "#dedede",
     },
   },
   {

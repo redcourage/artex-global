@@ -11,29 +11,29 @@ const currentYear = new Date().getFullYear();
 // 전환에는 반응하지 않는다(탭 제목 한 줄 수준이라 허용한다).
 const META_BY_LOCALE: Record<Locale, { title: string; description: string }> = {
   en: {
-    title: "ARTEX: Autonomous Penetration Testing Console",
+    title: "CryptoLab ARTEX: Autonomous Penetration Testing Console",
     description: "An LLM-driven system console for autonomous penetration testing",
   },
   ko: {
-    title: "ARTEX: 자율 침투 테스트 콘솔",
+    title: "CryptoLab ARTEX: 자율 침투 테스트 콘솔",
     description: "LLM 기반으로 자율 침투 테스트를 수행하는 시스템 콘솔",
   },
   zh: {
-    title: "ARTEX — 自主渗透测试控制台",
+    title: "CryptoLab ARTEX — 自主渗透测试控制台",
     description: "LLM 驱动的自主渗透测试系统控制台",
   },
   es: {
-    title: "ARTEX: Consola de Pruebas de Penetración Autónomas",
+    title: "CryptoLab ARTEX: Consola de Pruebas de Penetración Autónomas",
     description: "Una consola de sistema impulsada por LLM para pruebas de penetración autónomas",
   },
   ja: {
-    title: "ARTEX: 自律型ペネトレーションテストコンソール",
+    title: "CryptoLab ARTEX: 自律型ペネトレーションテストコンソール",
     description: "LLM を活用して自律的にペネトレーションテストを行うシステムコンソール",
   },
 };
 
 export const APP_CONFIG = {
-  name: "ARTEX",
+  name: "CryptoLab ARTEX",
   version: packageJson.version,
   copyright: `© ${currentYear}, ARTEX.`,
   meta: META_BY_LOCALE[resolveLocale()] ?? META_BY_LOCALE[DEFAULT_LOCALE],

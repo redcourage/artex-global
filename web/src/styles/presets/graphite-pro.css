@@ -1,0 +1,96 @@
+/*
+label: Graphite
+value: graphite-pro
+*/
+
+:root[data-theme-preset="graphite-pro"] {
+  --background: #f5f5f5;
+  --foreground: #202020;
+  --card: #ffffff;
+  --card-foreground: #202020;
+  --popover: #ffffff;
+  --popover-foreground: #202020;
+  --primary: #292929;
+  --primary-foreground: #ffffff;
+  --secondary: #ededed;
+  --secondary-foreground: #202020;
+  --muted: #ededed;
+  --muted-foreground: #595959;
+  --accent: #e3e3e3;
+  --accent-foreground: #202020;
+  --destructive: #303030;
+  --border: #969696;
+  --input: #969696;
+  --ring: #292929;
+  --sidebar: #f2f2f2;
+  --sidebar-foreground: #202020;
+  --sidebar-primary: #292929;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e3e3e3;
+  --sidebar-accent-foreground: #202020;
+  --sidebar-border: #969696;
+  --sidebar-ring: #292929;
+  --demo-success: #454545;
+  --demo-warning: #454545;
+  --demo-danger: #303030;
+  --radius: 0.625rem;
+  --chart-1: #292929;
+  --chart-2: #454545;
+  --chart-3: #454545;
+  --chart-4: #303030;
+  --chart-5: #595959;
+  --shadow-2xs: none;
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+  --shadow-2xl: none;
+}
+
+.dark:root[data-theme-preset="graphite-pro"] {
+  --background: #16181c;
+  --foreground: #f2f3f5;
+  --card: #22252a;
+  --card-foreground: #f2f3f5;
+  --popover: #22252a;
+  --popover-foreground: #f2f3f5;
+  --primary: #b9cceb;
+  --primary-foreground: #172235;
+  --secondary: #30343c;
+  --secondary-foreground: #f2f3f5;
+  --muted: #30343c;
+  --muted-foreground: #bdc5d1;
+  --accent: #3a424f;
+  --accent-foreground: #f2f3f5;
+  --destructive: #f4a6ae;
+  --border: #737e90;
+  --input: #737e90;
+  --ring: #b9cceb;
+  --sidebar: #1b1e23;
+  --sidebar-foreground: #f2f3f5;
+  --sidebar-primary: #b9cceb;
+  --sidebar-primary-foreground: #172235;
+  --sidebar-accent: #3a424f;
+  --sidebar-accent-foreground: #f2f3f5;
+  --sidebar-border: #737e90;
+  --sidebar-ring: #b9cceb;
+  --demo-success: #a4d8b5;
+  --demo-warning: #e7ce98;
+  --demo-danger: #f4a6ae;
+  --radius: 0.625rem;
+  --chart-1: #b9cceb;
+  --chart-2: #a4d8b5;
+  --chart-3: #e7ce98;
+  --chart-4: #f4a6ae;
+  --chart-5: #bdc5d1;
+  --shadow-2xs: none;
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+  --shadow-2xl: none;
+}

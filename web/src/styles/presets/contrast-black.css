@@ -1,0 +1,96 @@
+/*
+label: Studio Contrast
+value: contrast-black
+*/
+
+:root[data-theme-preset="contrast-black"] {
+  --background: #ffffff;
+  --foreground: #171717;
+  --card: #ffffff;
+  --card-foreground: #171717;
+  --popover: #ffffff;
+  --popover-foreground: #171717;
+  --primary: #171717;
+  --primary-foreground: #ffffff;
+  --secondary: #f3f3f3;
+  --secondary-foreground: #171717;
+  --muted: #f3f3f3;
+  --muted-foreground: #4d4d4d;
+  --accent: #e8e8e8;
+  --accent-foreground: #171717;
+  --destructive: #171717;
+  --border: #767676;
+  --input: #767676;
+  --ring: #171717;
+  --sidebar: #f7f7f7;
+  --sidebar-foreground: #171717;
+  --sidebar-primary: #171717;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e8e8e8;
+  --sidebar-accent-foreground: #171717;
+  --sidebar-border: #767676;
+  --sidebar-ring: #171717;
+  --demo-success: #333333;
+  --demo-warning: #333333;
+  --demo-danger: #171717;
+  --radius: 0.625rem;
+  --chart-1: #171717;
+  --chart-2: #4d4d4d;
+  --chart-3: #767676;
+  --chart-4: #171717;
+  --chart-5: #333333;
+  --shadow-2xs: none;
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+  --shadow-2xl: none;
+}
+
+.dark:root[data-theme-preset="contrast-black"] {
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #080808;
+  --card-foreground: #ffffff;
+  --popover: #080808;
+  --popover-foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+  --secondary: #191919;
+  --secondary-foreground: #ffffff;
+  --muted: #191919;
+  --muted-foreground: #c7c7c7;
+  --accent: #272727;
+  --accent-foreground: #ffffff;
+  --destructive: #ffffff;
+  --border: #898989;
+  --input: #898989;
+  --ring: #ffffff;
+  --sidebar: #0d0d0d;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #ffffff;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #272727;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #898989;
+  --sidebar-ring: #ffffff;
+  --demo-success: #ededed;
+  --demo-warning: #ededed;
+  --demo-danger: #ffffff;
+  --radius: 0.625rem;
+  --chart-1: #ffffff;
+  --chart-2: #c7c7c7;
+  --chart-3: #898989;
+  --chart-4: #ffffff;
+  --chart-5: #ededed;
+  --shadow-2xs: none;
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+  --shadow-2xl: none;
+}

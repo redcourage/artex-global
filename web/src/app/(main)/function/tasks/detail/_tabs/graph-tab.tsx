@@ -5,6 +5,7 @@ import * as React from "react";
 import { ExplorationGraph } from "@/components/exploration-graph";
 import { Card, CardContent } from "@/components/ui/card";
 import { api } from "@/lib/api";
+import { shareGraphSnapshot } from "@/lib/graph-snapshot";
 import type { Edge, TaskNode } from "@/lib/types";
 
 export function GraphTab({ taskId }: { taskId: string }) {
@@ -30,7 +31,7 @@ export function GraphTab({ taskId }: { taskId: string }) {
           ]);
           if (sig === sigRef.current) return; // 无变化 → 不重建
           sigRef.current = sig;
-          setNodes(ns);
+          setNodes((previous) => shareGraphSnapshot({ nodes: previous, edges: [] }, { nodes: ns, edges: [] }).nodes);
           setEdges(es);
         })
         .catch(() => {

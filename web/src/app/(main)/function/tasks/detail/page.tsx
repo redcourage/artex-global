@@ -5,7 +5,16 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { ArchiveIcon, ArrowLeftIcon, BrainIcon, CheckIcon, CircleAlertIcon, PauseIcon, PlayIcon } from "lucide-react";
+import {
+  ArchiveIcon,
+  ArrowLeftIcon,
+  BrainIcon,
+  CheckIcon,
+  CircleAlertIcon,
+  MoreHorizontalIcon,
+  PauseIcon,
+  PlayIcon,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
@@ -33,12 +42,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { api } from "@/lib/api";
 import type { LLMProfile, Task } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 import { AssetsTab } from "./_tabs/assets-tab";
 import { BroadcastTab } from "./_tabs/broadcast-tab";
@@ -213,6 +223,33 @@ function TaskDetailInner() {
   const [paused, setPaused] = React.useState(false);
   const [loaded, setLoaded] = React.useState(false);
   const [tab, setTab] = React.useState("sessions");
+  const [liveMode, setLiveMode] = React.useState(false);
+  const { open: sidebarOpen, setOpen: setSidebarOpen } = useSidebar();
+  const sidebarBeforeLive = React.useRef<boolean | null>(null);
+  const sidebarSetter = React.useRef(setSidebarOpen);
+  React.useEffect(() => {
+    sidebarSetter.current = setSidebarOpen;
+  }, [setSidebarOpen]);
+  React.useEffect(() => {
+    if (liveMode && sidebarBeforeLive.current === null) {
+      sidebarBeforeLive.current = sidebarOpen;
+      setSidebarOpen(false);
+    } else if (!liveMode && sidebarBeforeLive.current !== null) {
+      const previous = sidebarBeforeLive.current;
+      sidebarBeforeLive.current = null;
+      setSidebarOpen(previous);
+    }
+  }, [liveMode, sidebarOpen, setSidebarOpen]);
+  React.useEffect(
+    () => () => {
+      if (sidebarBeforeLive.current !== null) sidebarSetter.current(sidebarBeforeLive.current);
+    },
+    [],
+  );
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a different task starts in its normal session view.
+  React.useEffect(() => {
+    setLiveMode(false);
+  }, [id]);
   const [interceptPendingCount, setInterceptPendingCount] = React.useState(0);
   const [profiles, setProfiles] = React.useState<LLMProfile[]>([]);
   const [archiving, setArchiving] = React.useState(false);
@@ -350,10 +387,60 @@ function TaskDetailInner() {
     </Button>
   );
 
+  const taskDetails = (
+    <>
+      <code
+        className={cn(
+          "rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground",
+          !liveMode && "hidden sm:inline",
+        )}
+      >
+        {task.id}
+      </code>
+      <Separator orientation="vertical" className="mx-1 h-4" />
+      <TaskLLMControl task={task} profiles={profiles} onUpdated={load} />
+      {canArchive ? (
+        <AlertDialog>
+          <AlertDialogTrigger asChild>{archiveTrigger}</AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t("archive.dialogTitle", { id: task.id })}</AlertDialogTitle>
+              <AlertDialogDescription>{t("archive.dialogDesc")}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t("archive.cancel")}</AlertDialogCancel>
+              <AlertDialogAction onClick={() => void archiveTask()}>{t("archive.confirm")}</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      ) : (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex">{archiveTrigger}</span>
+          </TooltipTrigger>
+          <TooltipContent>{archiveDisabledReason}</TooltipContent>
+        </Tooltip>
+      )}
+    </>
+  );
+
   return (
-    <Tabs value={tab} onValueChange={setTab} className="flex flex-1 flex-col gap-0">
+    <Tabs
+      value={tab}
+      onValueChange={(value) => {
+        setTab(value);
+        setLiveMode(false);
+      }}
+      className="flex flex-1 flex-col gap-0"
+    >
       {/* Top fixed area */}
-      <header className="sticky top-0 z-10 flex flex-col gap-2 border-b bg-background/95 px-4 py-2.5 backdrop-blur lg:px-6">
+      <header
+        data-task-header
+        className={cn(
+          "sticky top-0 z-10 flex flex-col border-b bg-background/95 backdrop-blur transition-[padding,gap] duration-300 motion-reduce:transition-none",
+          liveMode ? "gap-0 px-2 py-1" : "gap-2 px-4 py-2.5 lg:px-6",
+        )}
+      >
         <div className="flex items-center gap-2">
           <SidebarTrigger className="-ml-1" />
           <Button asChild variant="ghost" size="icon" className="size-7">
@@ -364,61 +451,76 @@ function TaskDetailInner() {
           <h1 className="min-w-0 flex-1 truncate text-sm font-semibold" title={task.name || task.description}>
             {task.name || task.description}
           </h1>
-          <code className="hidden rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground sm:inline">
-            {task.id}
-          </code>
-          <Separator orientation="vertical" className="mx-1 hidden h-4 sm:block" />
-          <TaskLLMControl task={task} profiles={profiles} onUpdated={load} />
           <StatusBadge domain={terminal ? "task" : "engine"} value={terminal ? task.status : engineMode} dot />
-          {canArchive ? (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>{archiveTrigger}</AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>{t("archive.dialogTitle", { id: task.id })}</AlertDialogTitle>
-                  <AlertDialogDescription>{t("archive.dialogDesc")}</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>{t("archive.cancel")}</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => void archiveTask()}>{t("archive.confirm")}</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+          {liveMode ? (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-7"
+                  aria-label={t("tabs.overview")}
+                  title={t("tabs.overview")}
+                >
+                  <MoreHorizontalIcon className="size-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-auto max-w-[90vw]">
+                <div className="flex flex-wrap items-center gap-2">{taskDetails}</div>
+              </PopoverContent>
+            </Popover>
           ) : (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="inline-flex">{archiveTrigger}</span>
-              </TooltipTrigger>
-              <TooltipContent>{archiveDisabledReason}</TooltipContent>
-            </Tooltip>
+            taskDetails
           )}
+          <Button
+            size="sm"
+            variant={liveMode ? "secondary" : "outline"}
+            aria-pressed={liveMode}
+            onClick={() => {
+              setTab("sessions");
+              setLiveMode((live) => !live);
+            }}
+          >
+            {t(liveMode ? "liveExit" : "liveEnter")}
+          </Button>
           <Button size="sm" variant={controlVariant} onClick={togglePause} disabled={terminal}>
             {controlIcon}
             {controlLabel}
           </Button>
         </div>
-        <p className="truncate text-xs text-muted-foreground">{task.goal}</p>
-        {/* Tabs */}
-        <div className="no-scrollbar min-w-0 overflow-x-auto">
-          <TabsList variant="default" className="min-w-max">
-            {TAB_VALUES.map((value) => (
-              <TabsTrigger key={value} value={value}>
-                {t(`tabs.${value}`)}
-                {value === "intercept" && interceptPendingCount > 0 && (
-                  <span className="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-semibold leading-none text-white">
-                    {interceptPendingCount > 99 ? "99+" : interceptPendingCount}
-                  </span>
-                )}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+        <div
+          className={cn(
+            "grid transition-[grid-template-rows,opacity] duration-300 motion-reduce:transition-none",
+            liveMode ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100",
+          )}
+          inert={liveMode || undefined}
+          aria-hidden={liveMode}
+        >
+          <div className="min-h-0 overflow-hidden space-y-2">
+            <p className="truncate text-xs text-muted-foreground">{task.goal}</p>
+            {/* Tabs */}
+            <div className="no-scrollbar min-w-0 overflow-x-auto">
+              <TabsList variant="default" className="min-w-max">
+                {TAB_VALUES.map((value) => (
+                  <TabsTrigger key={value} value={value}>
+                    {t(`tabs.${value}`)}
+                    {value === "intercept" && interceptPendingCount > 0 && (
+                      <span className="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-semibold leading-none text-white">
+                        {interceptPendingCount > 99 ? "99+" : interceptPendingCount}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
+          </div>
         </div>
       </header>
 
       {/* Tab content */}
-      <div className="flex-1 p-4 lg:p-6">
+      <div className={cn("min-w-0 flex-1", liveMode ? "p-1.5" : "p-4 lg:p-6")}>
         <TabsContent value="sessions" className="mt-0">
-          <SessionsTab taskId={id} />
+          <SessionsTab key={id} taskId={id} liveMode={liveMode} onLiveModeChange={setLiveMode} />
         </TabsContent>
         <TabsContent value="overview" className="mt-0">
           <OverviewTab taskId={id} />

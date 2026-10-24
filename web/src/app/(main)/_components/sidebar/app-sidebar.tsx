@@ -13,6 +13,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { BrandLogo } from "@/components/brand-logo";
 import { APP_CONFIG } from "@/config/app-config";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
@@ -40,11 +41,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild>
+            <SidebarMenuButton
+              asChild
+              className="h-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0!"
+            >
               <Link prefetch={false} href="/function/tasks">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/logo.png" alt="ARTEX" width={40} height={40} className="shrink-0" />
-                <span className="font-semibold text-base">{APP_CONFIG.name}</span>
+                <BrandLogo className="size-8" size={32} />
+                <span className="truncate font-semibold text-sm group-data-[collapsible=icon]:hidden">
+                  {APP_CONFIG.name}
+                </span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

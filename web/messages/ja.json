@@ -12,12 +12,12 @@
       "submitting": "ログイン中…",
       "title": "ログイン",
       "username": "ユーザー名",
-      "welcome": "おかえりなさい。パスワードを入力すると ARTEX を引き続きご利用いただけます。"
+      "welcome": "おかえりなさい。パスワードを入力すると CryptoLab ARTEX を引き続きご利用いただけます。"
     },
     "setup": {
       "confirmPassword": "パスワード（確認）",
       "confirmPlaceholder": "パスワードをもう一度入力してください",
-      "desc": "ARTEX を初めてご利用になります。アカウントのログインパスワードを設定してください（8文字以上）。",
+      "desc": "CryptoLab ARTEX を初めてご利用になります。アカウントのログインパスワードを設定してください（8文字以上）。",
       "errorBackend": "バックエンドサービスに接続できません",
       "errorInit": "初期化に失敗しました",
       "errorMismatch": "入力した2つのパスワードが一致しません",
@@ -714,7 +714,9 @@
           "cidr": "CIDR 帯域"
         }
       }
-    }
+    },
+    "liveEnter": "ライブパネル",
+    "liveExit": "セッションに戻る"
   },
   "retest": {
     "panel": {
@@ -3108,6 +3110,64 @@
       "cancel": "キャンセル",
       "starting": "開始中…",
       "start": "新しいセッションを開始"
+    },
+    "live": {
+      "graph": "グラフ",
+      "graphAdd": "探索グラフパネルを追加",
+      "graphClose": "グラフパネルを閉じる",
+      "graphLoading": "グラフを読込中…",
+      "graphError": "グラフの更新に失敗しました",
+      "graphRetry": "再試行",
+      "graphDetails": "凡例とミニマップを表示",
+      "balancePanes": "全パネルを均等に配置",
+      "addPane": "パネルを追加",
+      "addSession": "{title} をパネルで開く",
+      "dragToAdd": "ドラッグしてパネルを追加",
+      "autoFollow": "自動配置",
+      "autoFollowHint": "Plannerと実行中のWorkerを最大2つ表示。完了した枠は次のWorkerに切り替わります。手動操作で自動配置を停止します。",
+      "expandPane": "パネルを拡大",
+      "restorePane": "元のサイズに戻す (Esc)",
+      "closePane": "パネルを閉じる（エージェントは継続）",
+      "emptyWorkspace": "セッションをここへドラッグするか、一覧の + を押してください。",
+      "pane": "セッション枠 {n}",
+      "selectPane": "枠 {n} を選択",
+      "choose": "セッションを選択",
+      "search": "セッションを検索…",
+      "noMatches": "一致するセッションはありません",
+      "unpin": "固定を解除",
+      "pin": "セッションを固定",
+      "openSession": "会話と操作を開く",
+      "approval": "承認待ち",
+      "older": "以前の記録を読み込む",
+      "empty": "一覧またはメニューから選択してください。新しいWorkerは空き枠に表示されます。",
+      "latest": "最新の記録を追跡",
+      "pinnedHint": "セッションを変更するには固定を解除してください。",
+      "pinnedLayout": "非表示になる枠の固定を解除してからレイアウトを縮小してください。",
+      "resizeList": "一覧の幅を変更",
+      "showList": "一覧を表示",
+      "hideList": "一覧を閉じる",
+      "target": "選択中の枠 {n}",
+      "workers": "Worker · 実行中 {running} · 完了 {done}",
+      "layout": "セッション配置",
+      "layoutOption": "{columns}列 × {rows}行",
+      "dock": {
+        "hint": "ハンドルをドラッグ · 端で分割 · 中央で交換 · Escで取消",
+        "arrange": "パネル配置",
+        "source": "移動するパネル",
+        "target": "基準パネル",
+        "position": "位置",
+        "left": "左",
+        "right": "右",
+        "top": "上",
+        "bottom": "下",
+        "center": "位置を交換",
+        "apply": "移動",
+        "restore": "元のサイズに戻す",
+        "moved": "パネルを移動しました",
+        "grip": "ドラッグで移動。キーボードはパネル配置メニューを使用。",
+        "resize": "パネルのサイズ変更"
+      },
+      "selectTarget": "セッションを変更するパネルを選択してください"
     }
   },
   "settingsPage": {

@@ -1,0 +1,87 @@
+/* Shared, scoped readability adjustments for the presentation presets. */
+:root:is(
+  [data-theme-preset="contrast-black"],
+  [data-theme-preset="operations-navy"],
+  [data-theme-preset="graphite-pro"],
+  [data-theme-preset="briefing-light"]
+) {
+  & [data-live-pane] {
+    & .text-amber-600 {
+      color: var(--demo-warning);
+    }
+    & .text-muted-foreground {
+      color: var(--muted-foreground);
+    }
+    & .bg-primary.text-white {
+      color: var(--primary-foreground);
+    }
+    & .text-white:is(.bg-sky-600, .bg-violet-600, .bg-teal-600, .bg-pink-600, .bg-orange-600, .bg-amber-600) {
+      background: var(--muted);
+      color: var(--foreground);
+    }
+  }
+}
+
+/* Preserve status icons/labels: all light presets and both Studio Contrast modes are achromatic. */
+:root[data-theme-preset="contrast-black"],
+:root:not(.dark):is(
+  [data-theme-preset="contrast-black"],
+  [data-theme-preset="operations-navy"],
+  [data-theme-preset="graphite-pro"],
+  [data-theme-preset="briefing-light"]
+) {
+  &
+    :is(
+      [class*="text-blue-"],
+      [class*="text-sky-"],
+      [class*="text-cyan-"],
+      [class*="text-indigo-"],
+      [class*="text-violet-"],
+      [class*="text-emerald-"],
+      [class*="text-green-"],
+      [class*="text-teal-"],
+      [class*="text-amber-"],
+      [class*="text-orange-"],
+      [class*="text-red-"],
+      [class*="text-pink-"],
+      [class*="text-yellow-"]
+    ) {
+    color: var(--foreground);
+  }
+  &
+    :is(
+      [class*="bg-blue-"],
+      [class*="bg-sky-"],
+      [class*="bg-cyan-"],
+      [class*="bg-indigo-"],
+      [class*="bg-violet-"],
+      [class*="bg-emerald-"],
+      [class*="bg-green-"],
+      [class*="bg-teal-"],
+      [class*="bg-amber-"],
+      [class*="bg-orange-"],
+      [class*="bg-red-"],
+      [class*="bg-pink-"],
+      [class*="bg-yellow-"]
+    ) {
+    background-color: var(--muted);
+    color: var(--foreground);
+  }
+  & :is([class*="bg-blue-"], [class*="bg-emerald-"], [class*="bg-green-"]):is(.rounded-full) {
+    background-color: var(--foreground);
+  }
+  & :is([class*="border-blue-"], [class*="border-sky-"], [class*="border-amber-"], [class*="border-red-"]) {
+    border-color: var(--border);
+  }
+}
+
+/* Surface hierarchy only: keep ARTEX's existing spacing, type sizes and shapes. */
+:root[data-theme-preset="redcourage"] {
+  & [data-live-pane] {
+    border-color: var(--border);
+    & > div:first-of-type { background-color: var(--demo-chrome); border-color: var(--demo-divider); }
+    & > div:nth-of-type(2) { border-color: var(--demo-divider); }
+    & pre { background-color: var(--demo-code); color: var(--foreground); }
+    &.border-foreground { border-color: var(--demo-selection); --tw-ring-color: var(--demo-selection); }
+  }
+}

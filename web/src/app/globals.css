@@ -6,6 +6,12 @@
 @import "../styles/presets/brutalist.css";
 @import "../styles/presets/soft-pop.css";
 @import "../styles/presets/tangerine.css";
+@import "../styles/presets/contrast-black.css";
+@import "../styles/presets/operations-navy.css";
+@import "../styles/presets/graphite-pro.css";
+@import "../styles/presets/briefing-light.css";
+@import "../styles/presets/redcourage.css";
+@import "../styles/security-demo.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -281,4 +287,38 @@ html {
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
+}
+
+
+/* Keep live status decoration from competing with camera and node gestures. */
+[data-dock-interacting] .graph-surface .react-flow__edge.animated path,
+[data-dock-interacting] .graph-surface .animate-ping,
+.graph-surface[data-graph-interacting] .react-flow__edge.animated path,
+.graph-surface[data-graph-interacting] .animate-ping {
+  animation-play-state: paused !important;
+}
+.graph-surface .react-flow__viewport { will-change: transform; }
+
+
+/* Visible panel separation and completion feedback. */
+.live-session-shell {
+  border-color: color-mix(in oklab, var(--foreground) 28%, var(--border));
+  box-shadow: 0 1px 3px rgb(0 0 0 / .12);
+}
+.live-session-shell[data-selected="true"] {
+  outline: 1px solid color-mix(in oklab, var(--foreground) 72%, transparent);
+  outline-offset: 2px;
+}
+.live-session-shell[data-run-state="done"] {
+  border-color: #22a66a;
+  box-shadow: 0 0 8px rgb(34 166 106 / .22), inset 0 0 2px rgb(34 166 106 / .15);
+  animation: live-pane-complete 1.6s ease-out;
+}
+@keyframes live-pane-complete {
+  0% { box-shadow: 0 0 0 rgb(34 166 106 / 0); }
+  30% { box-shadow: 0 0 15px rgb(34 166 106 / .52), inset 0 0 5px rgb(34 166 106 / .22); }
+  100% { box-shadow: 0 0 8px rgb(34 166 106 / .22), inset 0 0 2px rgb(34 166 106 / .15); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-session-shell[data-run-state="done"] { animation: none; }
 }

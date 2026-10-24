@@ -12,12 +12,12 @@
       "submitting": "Logging in…",
       "title": "Log in",
       "username": "Username",
-      "welcome": "Welcome back. Enter your password to continue using ARTEX."
+      "welcome": "Welcome back. Enter your password to continue using CryptoLab ARTEX."
     },
     "setup": {
       "confirmPassword": "Confirm password",
       "confirmPlaceholder": "Re-enter your password",
-      "desc": "This is your first time using ARTEX. Set a login password for your account (at least 8 characters).",
+      "desc": "This is your first time using CryptoLab ARTEX. Set a login password for your account (at least 8 characters).",
       "errorBackend": "Can't connect to the backend service",
       "errorInit": "Initialization failed",
       "errorMismatch": "The two passwords don't match",
@@ -714,7 +714,9 @@
           "cidr": "CIDR range"
         }
       }
-    }
+    },
+    "liveEnter": "Live panel",
+    "liveExit": "Back to sessions"
   },
   "retest": {
     "panel": {
@@ -3108,6 +3110,64 @@
       "cancel": "Cancel",
       "starting": "Starting…",
       "start": "Start new session"
+    },
+    "live": {
+      "graph": "Graph",
+      "graphAdd": "Add exploration graph panel",
+      "graphClose": "Close graph panel",
+      "graphLoading": "Loading graph…",
+      "graphError": "Graph update failed",
+      "graphRetry": "Retry",
+      "graphDetails": "Show legend and minimap",
+      "balancePanes": "Balance all panes",
+      "addPane": "Add pane",
+      "addSession": "Open {title} in a pane",
+      "dragToAdd": "Drag into the workspace to add a pane",
+      "autoFollow": "Auto arrange",
+      "autoFollowHint": "Planner on the left, up to two running workers. Done panes follow the next running worker. Manual changes pause automatic arrangement.",
+      "expandPane": "Expand pane",
+      "restorePane": "Restore pane (Esc)",
+      "closePane": "Close pane (agent keeps running)",
+      "emptyWorkspace": "Drag a session here, or use + in the session list.",
+      "pane": "Session pane {n}",
+      "selectPane": "Select pane {n}",
+      "choose": "Choose a session",
+      "search": "Search sessions…",
+      "noMatches": "No matching sessions",
+      "unpin": "Unpin session",
+      "pin": "Pin session",
+      "openSession": "Open interactive session",
+      "approval": "Approval pending",
+      "older": "Load older messages",
+      "empty": "Select a session from the list or menu. New workers fill empty panes.",
+      "latest": "Follow latest",
+      "pinnedHint": "Unpin this pane before changing its session.",
+      "pinnedLayout": "Unpin the panes that would be hidden before reducing the layout.",
+      "resizeList": "Resize session list",
+      "showList": "Show session list",
+      "hideList": "Hide session list",
+      "target": "Selected pane {n}",
+      "workers": "Workers · {running} running · {done} completed",
+      "layout": "Session layout",
+      "layoutOption": "{columns} columns × {rows} rows",
+      "dock": {
+        "hint": "Drag the grip to rearrange · edges split · center swaps · Esc cancels",
+        "arrange": "Arrange panes",
+        "source": "Move pane",
+        "target": "Relative to",
+        "position": "Position",
+        "left": "Left",
+        "right": "Right",
+        "top": "Above",
+        "bottom": "Below",
+        "center": "Swap positions",
+        "apply": "Move",
+        "restore": "Restore pane",
+        "moved": "Pane moved",
+        "grip": "Drag to move this pane. Use Arrange panes for keyboard controls.",
+        "resize": "Resize panes"
+      },
+      "selectTarget": "Select a pane to change its session"
     }
   },
   "settingsPage": {
