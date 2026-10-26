@@ -200,7 +200,7 @@ function SkillsOverview({
         <p className="text-muted-foreground text-sm">{t("overviewDesc")}</p>
       </div>
 
-      {/* 指标卡 */}
+      {/* 지표 카드 */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {stats.map((s) => (
           <div key={s.label} className="rounded-lg border p-3">
@@ -211,7 +211,7 @@ function SkillsOverview({
         ))}
       </div>
 
-      {/* 调用排行 */}
+      {/* 호출 순위 */}
       <div className="space-y-2">
         <Label className="text-xs text-muted-foreground">{t("ranking")}</Label>
         {agg.ranked.length === 0 ? (
@@ -246,7 +246,7 @@ function SkillsOverview({
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2">
-        {/* 最近调用 */}
+        {/* 최근 호출 */}
         <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">{t("recent")}</Label>
           {agg.recent.length === 0 ? (
@@ -272,7 +272,7 @@ function SkillsOverview({
           )}
         </div>
 
-        {/* 未使用（可清理 / 需曝光） */}
+        {/* 미사용(정리 가능 / 노출 필요) */}
         <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">
             {t("unusedSkills")}
@@ -343,8 +343,8 @@ export default function SkillsPage() {
   const [pendingDelete, setPendingDelete] = React.useState<PendingDelete>(null);
   const [deleting, setDeleting] = React.useState(false);
 
-  // 调用统计：列表页的次数/最近调用随 api.skills() 一起回来；选中某个 skill 时再拉它的
-  // 最近调用明细。missing = 被点名但不存在的 skill（想用但没有）。
+  // 호출 통계: 목록의 횟수/최근 호출은 api.skills()와 함께 반환된다. skill 선택 시 해당 skill의
+  // 최근 호출 상세를 추가 조회한다. missing은 이름으로 요청했으나 없는 skill이다.
   const [usageCalls, setUsageCalls] = React.useState<SkillCall[]>([]);
   const [usageLoading, setUsageLoading] = React.useState(false);
   const [missing, setMissing] = React.useState<MissingSkill[]>([]);
@@ -831,7 +831,7 @@ export default function SkillsPage() {
           <h1 className="text-sm font-semibold leading-tight">{t("title")}</h1>
           <p className="text-muted-foreground text-xs">{t("subtitle")}</p>
         </div>
-        {/* 缺口清单：agent 点名调用、但库里没有的 skill —— 直接是该补什么的依据。 */}
+        {/* 부족한 skill 목록: agent가 요청했으나 라이브러리에 없어 무엇을 보충해야 하는지 보여준다. */}
         {missing.length > 0 && (
           <Popover>
             <PopoverTrigger asChild>
@@ -862,7 +862,7 @@ export default function SkillsPage() {
         )}
       </div>
       <div className="flex flex-1 overflow-hidden">
-        {/* ── 左侧文件树 ── */}
+        {/* ── 왼쪽 파일 트리 ── */}
         <div className="flex w-64 shrink-0 flex-col border-r">
           <div className="flex flex-col gap-2 border-b p-2">
             <Button size="sm" variant="outline" className="w-full" onClick={() => setNewOpen(true)}>
@@ -899,7 +899,7 @@ export default function SkillsPage() {
                 const isSkillSelected = selected?.skill === s.name && selected.path === null;
                 return (
                   <div key={s.name}>
-                    {/* skill 根节点 */}
+                    {/* skill 루트 노드 */}
                     <div
                       role="treeitem"
                       tabIndex={0}
@@ -985,7 +985,7 @@ export default function SkillsPage() {
                       </span>
                     </div>
 
-                    {/* 展开：递归文件树 */}
+                    {/* 확장: 재귀 파일 트리 */}
                     {isOpen && (
                       <>
                         {renderTree(tree, s.name, 0)}
@@ -1001,7 +1001,7 @@ export default function SkillsPage() {
           </ScrollArea>
         </div>
 
-        {/* ── 右侧面板 ── */}
+        {/* ── 오른쪽 패널 ── */}
         <div className="flex flex-1 flex-col overflow-auto p-4">
           {!selected && (
             <SkillsOverview
@@ -1032,11 +1032,11 @@ export default function SkillsPage() {
                 </div>
               </div>
 
-              {/* 左右分栏：配置（MCP/可见性）在左为主，调用统计在右为辅。
-                  lg 以下放不下时用 flex-row-reverse 回落到单列——统计因 DOM 顺序在前，
-                  窄屏时自然落到配置上方（与改版前的上下顺序一致）。 */}
+              {/* 좌우 열: 주 설정(MCP/표시 범위)은 왼쪽, 보조 호출 통계는 오른쪽.
+                  lg 미만에서는 flex-row-reverse로 한 열에 배치한다. 통계가 DOM 순서상 먼저라
+                  좁은 화면에서 자연스럽게 설정 위에 표시된다(개편 전 순서와 동일). */}
               <div className="flex flex-col gap-6 lg:flex-row-reverse lg:items-start">
-                {/* ── 右侧：调用统计 ── */}
+                {/* ── 오른쪽: 호출 통계 ── */}
                 <div className="space-y-2 lg:w-80 lg:shrink-0">
                   <Label className="text-xs text-muted-foreground">{t("callStats")}</Label>
                   <div className="grid grid-cols-3 gap-2">
@@ -1099,7 +1099,7 @@ export default function SkillsPage() {
                   )}
                 </div>
 
-                {/* ── 左侧：关联 MCP + 可见性 ── */}
+                {/* ── 왼쪽: 연결 MCP + 표시 범위 ── */}
                 <div className="space-y-5 lg:min-w-0 lg:flex-1">
                   <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">
@@ -1170,7 +1170,7 @@ export default function SkillsPage() {
         </div>
       </div>
 
-      {/* ── 删除二次确认 ── */}
+      {/* ── 삭제 재확인 ── */}
       <AlertDialog
         open={!!pendingDelete}
         onOpenChange={(o) => {
@@ -1207,7 +1207,7 @@ export default function SkillsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ── 新建 Skill 对话框 ── */}
+      {/* ── Skill 생성 대화 상자 ── */}
       <Sheet open={newOpen} onOpenChange={setNewOpen}>
         <SheetContent side="right" className="flex w-full flex-col gap-0 data-[side=right]:sm:max-w-xl">
           <SheetHeader className="px-4 pt-4">
@@ -1234,7 +1234,7 @@ export default function SkillsPage() {
               </TabsTrigger>
             </TabsList>
 
-            {/* 基本信息 */}
+            {/* 기본 정보 */}
             <TabsContent
               value="basic"
               className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4 pt-4 data-[state=inactive]:hidden"
@@ -1296,7 +1296,7 @@ export default function SkillsPage() {
               </div>
             </TabsContent>
 
-            {/* 关联 MCP */}
+            {/* 연결 MCP */}
             <TabsContent value="mcp" className="overflow-y-auto px-4 pb-4 pt-4 data-[state=inactive]:hidden">
               <p className="mb-3 text-xs text-muted-foreground">{t("mcpSheetHint")}</p>
               {mcpOptions.length === 0 ? (
@@ -1318,7 +1318,7 @@ export default function SkillsPage() {
               )}
             </TabsContent>
 
-            {/* 可见性 */}
+            {/* 표시 범위 */}
             <TabsContent value="visibility" className="overflow-y-auto px-4 pb-4 pt-4 data-[state=inactive]:hidden">
               <p className="mb-3 text-xs text-muted-foreground">{t("visSheetHint")}</p>
               {agents.length === 0 ? (

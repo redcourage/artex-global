@@ -11,13 +11,13 @@ import type { Edge, TaskNode } from "@/lib/types";
 export function GraphTab({ taskId }: { taskId: string }) {
   const [nodes, setNodes] = React.useState<TaskNode[]>([]);
   const [edges, setEdges] = React.useState<Edge[]>([]);
-  // 上一次图数据的签名:轮询拿到相同数据时跳过 setState,避免整图无谓重建(拖动时
-  // 才不会被 20s 轮询打断而顿挫)。只取影响渲染的字段。
+  // 이전 그래프 데이터 서명. 같은 폴링 데이터면 setState를 건너뛰어 불필요한 전체 재구성과
+  // 드래그 중 20초 폴링에 따른 끊김을 방지한다. 렌더링에 영향을 주는 필드만 사용한다.
   const sigRef = React.useRef("");
 
   React.useEffect(() => {
     let cancelled = false;
-    sigRef.current = ""; // 换任务:强制下一次刷新
+    sigRef.current = ""; // 작업 변경: 다음 갱신 강제.
     const load = () => {
       api
         .explorationGraph(taskId)
@@ -29,7 +29,7 @@ export function GraphTab({ taskId }: { taskId: string }) {
             ns.map((n) => [n.id, n.type, n.state, n.priority, n.payload]),
             es.map((e) => [e.src, e.dst, e.rel]),
           ]);
-          if (sig === sigRef.current) return; // 无变化 → 不重建
+          if (sig === sigRef.current) return; // 변화 없음 → 재구성 생략.
           sigRef.current = sig;
           setNodes((previous) => shareGraphSnapshot({ nodes: previous, edges: [] }, { nodes: ns, edges: [] }).nodes);
           setEdges(es);

@@ -162,10 +162,10 @@ function FindingDetailInner() {
 
       {/* Tab content */}
       <div className="flex-1 p-4 lg:p-6">
-        {/* 概览：左（摘要 + 证据）/ 右（状态区） */}
+        {/* 개요: 왼쪽(요약 + 증거) / 오른쪽(상태 영역) */}
         <TabsContent value="overview" className="mt-0">
           <div className="grid gap-4 lg:grid-cols-3">
-            {/* 左栏 */}
+            {/* 왼쪽 열 */}
             <div className="flex flex-col gap-4 lg:col-span-2">
               <Card>
                 <CardHeader>
@@ -199,7 +199,7 @@ function FindingDetailInner() {
                 readOnly={finding.inherited}
                 onChanged={load}
               />
-              {/* 证据下方：详细报告(Markdown 渲染) */}
+              {/* 증거 아래: 상세 보고서(Markdown 렌더링) */}
               <Card>
                 <CardHeader className="flex-row items-center justify-between">
                   <CardTitle className="text-sm">{t("table.detailReport")}</CardTitle>
@@ -220,20 +220,20 @@ function FindingDetailInner() {
               </Card>
             </div>
 
-            {/* 右栏：状态区 */}
+            {/* 오른쪽 열: 상태 영역 */}
             <Card className="h-fit lg:sticky lg:top-24">
               <CardHeader>
                 <CardTitle className="text-sm">{t("detail.statusTitle")}</CardTitle>
               </CardHeader>
               <CardContent className="divide-y">
-                {/* 漏洞 ID */}
+                {/* 취약점 ID */}
                 <FieldRow label={t("detail.fieldId")}>
                   <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
                     #{finding.id}
                   </code>
                 </FieldRow>
 
-                {/* 严重等级 */}
+                {/* 심각도 */}
                 <FieldRow label={t("detail.fieldSeverity")}>
                   {finding.inherited ? (
                     <StatusBadge domain="severity" value={finding.severity} dot />
@@ -255,7 +255,7 @@ function FindingDetailInner() {
                   )}
                 </FieldRow>
 
-                {/* 处理状态 */}
+                {/* 처리 상태 */}
                 <FieldRow label={t("detail.fieldStatus")}>
                   {finding.inherited ? (
                     <StatusBadge domain="finding" value={finding.status} dot />
@@ -277,7 +277,7 @@ function FindingDetailInner() {
                   )}
                 </FieldRow>
 
-                {/* 漏洞类型 */}
+                {/* 취약점 유형 */}
                 <FieldRow label={t("detail.fieldType")}>
                   {finding.vulnclass ? (
                     <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{finding.vulnclass}</code>
@@ -286,7 +286,7 @@ function FindingDetailInner() {
                   )}
                 </FieldRow>
 
-                {/* 涉及资产 */}
+                {/* 관련 자산 */}
                 <FieldRow label={t("detail.fieldAssets")}>
                   {finding.assets && finding.assets.length > 0 ? (
                     <div className="flex flex-wrap justify-end gap-1">
@@ -305,7 +305,7 @@ function FindingDetailInner() {
                   )}
                 </FieldRow>
 
-                {/* 所属任务 */}
+                {/* 소속 작업 */}
                 <FieldRow label={t("detail.fieldTask")}>
                   {finding.task_id ? (
                     <Link
@@ -321,7 +321,7 @@ function FindingDetailInner() {
                   )}
                 </FieldRow>
 
-                {/* 发现时间 */}
+                {/* 발견 시각 */}
                 <FieldRow label={t("detail.fieldTime")}>
                   <span className="tabular-nums">{fmtTime(finding.ts)}</span>
                 </FieldRow>
@@ -330,7 +330,7 @@ function FindingDetailInner() {
           </div>
         </TabsContent>
 
-        {/* 链路图：从任务初始节点回溯到本漏洞节点的攻击链路 */}
+        {/* 경로 그래프: 작업 시작 노드에서 이 취약점 노드까지 이어지는 공격 경로. */}
         <TabsContent value="lineage" className="mt-0">
           <FindingLineageView findingId={finding.id} />
         </TabsContent>

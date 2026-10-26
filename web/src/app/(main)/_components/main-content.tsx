@@ -18,7 +18,7 @@ import { SearchDialog } from "./sidebar/search-dialog";
 import { ThemeSwitcher } from "./sidebar/theme-switcher";
 import { UpdateBadge } from "./update-badge";
 
-// 任务详情页保持原样：它自带头部/Tabs 与内边距，这里不再叠加全局头部和 padding。
+// 작업 상세 페이지는 자체 헤더/Tabs/안쪽 여백이 있으므로 전역 헤더와 padding을 추가하지 않는다.
 function isFullBleed(pathname: string) {
   const p = (() => {
     try {
@@ -27,8 +27,8 @@ function isFullBleed(pathname: string) {
       return pathname;
     }
   })();
-  // 静态导出开了 trailingSlash，列表页自身的 pathname 是 "/function/tasks/"，
-  // 先去掉尾斜杠再判前缀，否则列表页会被误判成详情页而丢掉全局头部。
+  // 정적 내보내기에서 trailingSlash가 켜져 목록 pathname은 "/function/tasks/"다.
+  // 접두사 판정 전에 끝 슬래시를 제거해 목록을 상세로 오인하고 전역 헤더를 숨기지 않게 한다.
   const normalized = p.replace(/\/+$/, "");
   return normalized.startsWith("/function/tasks/");
 }

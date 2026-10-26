@@ -1,35 +1,35 @@
-// 渠道字段表与配置值的解析工具。
+// 채널 필드 표와 설정값 해석 도구.
 //
-// 与页面拆开是因为这一份是**数据**而不是视图：它描述每种渠道有哪些字段、
-// 各自该用什么控件，以及表单文本到配置值（JSON）的双向转换。
-// 单独放一个文件后，新增渠道只需要动这里，页面本身不必改。
+// 이 파일은 화면이 아닌 데이터이므로 페이지와 분리했다. 채널별 필드와
+// 컨트롤 유형, 양식 텍스트와 설정값(JSON)의 양방향 변환을 정의한다.
+// 새 채널을 추가할 때 이 파일만 수정하고 페이지는 유지할 수 있다.
 //
-// 本文件是纯数据模块（非 client component），不能调用 useTranslations。
-// 所以文案不写死在这里，而是存 i18n 键（notifyPage 命名空间），由渲染它们的
-// 组件（page.tsx / channel-form.tsx）用 t() 解析——键是 ASCII，上游中文原文
-// 保留在 messages/zh.json。渠道类型展示名改走 notifyPage.kind.<kind>。
+// 순수 데이터 모듈(client component 아님)이므로 useTranslations를 호출할 수 없다.
+// 문구를 하드코딩하는 대신 i18n key(notifyPage 네임스페이스)를 저장하고 렌더링하는
+// 컴포넌트(page.tsx/channel-form.tsx)가 t()로 해석한다. key는 ASCII이며 상류 중국어 원문은
+// messages/zh.json에 보존한다. 채널 유형 표시 이름은 notifyPage.kind.<kind>를 사용한다.
 
-// 各渠道的配置字段定义。
+// 채널별 설정 필드 정의.
 //
-// 这里刻意保留一份前端字段表，而不是让后端下发 schema：后端只负责
-// Validate（必填/格式），UI 需要的是布局与控件类型，两者关注的不是同一件事。
-// 唯一的耦合点是 secret_keys —— 哪些字段该渲染成密码框由后端给出，
-// 因为只有渠道实现自己清楚哪些值算凭据（企业微信的整个 Webhook 就是凭据，
-// 而钉钉的只是其中一个 secret）。新增渠道时这里少一个条目只会让表单变空白，
-// 不会静默出错（下面的 hasFields 会提示）。
+// 백엔드 schema를 받는 대신 프런트엔드 필드 표를 유지한다. 백엔드는
+// Validate(필수/형식)를 맡고 UI는 배치와 컨트롤 유형을 관리하므로 관심사가 다르다.
+// 유일한 연결점은 secret_keys다. 비밀번호 입력으로 표시할 필드는 백엔드가 제공한다.
+// 어떤 값이 자격 증명인지는 채널 구현만 알 수 있다(WeCom은 Webhook 전체가 자격 증명이고
+// DingTalk는 그중 secret만 해당). 새 채널이 표에서 빠지면 양식이 비어 보이며
+// 조용히 실패하지 않는다(아래 hasFields가 안내).
 //
-// label / help / options[].label 存的是 notifyPage 命名空间下的 i18n 键，
-// placeholder 保留字面值（URL、示例，不翻译）。
+// label/help/options[].label은 notifyPage 네임스페이스의 i18n key다.
+// placeholder는 리터럴(URL/예시)로 유지하며 번역하지 않는다.
 export type FieldKind = "text" | "password" | "number" | "select" | "textarea" | "switch" | "kv" | "list";
 export interface FieldDef {
   key: string;
-  /** notifyPage 命名空间下的 i18n 键 */
+  /** notifyPage 네임스페이스의 i18n key. */
   label: string;
   kind: FieldKind;
   placeholder?: string;
-  /** notifyPage 命名空间下的 i18n 键 */
+  /** notifyPage 네임스페이스의 i18n key. */
   help?: string;
-  /** options[].label 也是 i18n 键 */
+  /** options[].label도 i18n key. */
   options?: { value: string; label: string }[];
 }
 export const CHANNEL_FIELDS: Record<string, FieldDef[]> = {
@@ -118,7 +118,7 @@ export const CHANNEL_FIELDS: Record<string, FieldDef[]> = {
   ],
 };
 
-// value 是过滤用的 min_severity 值，label 是 notifyPage.severityOpt.* 的 i18n 键。
+// value는 필터용 min_severity 값, label은 notifyPage.severityOpt.*의 i18n key다.
 export const SEVERITY_OPTIONS = [
   { value: "", label: "severityOpt.all" },
   { value: "low", label: "severityOpt.low" },
@@ -157,7 +157,7 @@ export const emptyForm = (kind: string): ChannelForm => ({
   onStatusChange: false,
 });
 
-// parseKV 解析「每行 KEY=VALUE」的文本域。
+// parseKV는 줄마다 KEY=VALUE인 텍스트 영역을 해석한다.
 export function parseKV(text: string): Record<string, string> {
   const out: Record<string, string> = {};
   for (const line of text.split("\n")) {
@@ -168,8 +168,8 @@ export function parseKV(text: string): Record<string, string> {
   }
   return out;
 }
-// parseIDs 解析逗号/空白分隔的 id 列表。分隔符保留全角逗号「，」：
-// 用户可能从别处粘贴带全角逗号的列表，这是输入解析逻辑而非展示文案。
+// parseIDs는 쉼표/공백으로 구분한 id 목록을 해석한다. 전각 쉼표 「，」도 구분자로 유지한다.
+// 사용자가 다른 곳에서 전각 쉼표가 포함된 목록을 붙여넣을 수 있으므로 이는 표시 문구가 아닌 입력 해석 로직이다.
 export function parseIDs(text: string): number[] {
   return text
     .split(/[\s,，]+/)
@@ -178,8 +178,8 @@ export function parseIDs(text: string): number[] {
     .map((s) => Number(s))
     .filter((n) => Number.isFinite(n) && n > 0);
 }
-// parseKeywords 解析行/逗号分隔的关键词列表（漏洞类型名可能含空格，所以按行或逗号切）。
-// 同样保留全角逗号「，」作为分隔符（输入解析，非展示）。
+// parseKeywords는 줄/쉼표로 구분한 키워드를 해석한다(취약점 유형에 공백이 있을 수 있어 줄/쉼표로 나눔).
+// 마찬가지로 전각 쉼표 「，」를 구분자로 유지한다(표시가 아닌 입력 해석).
 export function parseKeywords(text: string): string[] {
   return text
     .split(/[\n,，]+/)

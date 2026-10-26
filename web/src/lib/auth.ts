@@ -1,5 +1,5 @@
 const TOKEN_KEY = "artex_token";
-const COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 天（秒）
+const COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7일(초).
 
 export interface CurrentUser {
   id: string;
@@ -13,13 +13,13 @@ export interface CurrentUser {
 export const auth = {
   getToken(): string | null {
     if (typeof window === "undefined") return null;
-    // Mock demo：无真实登录，返回一个假 token 让路由守卫放行、直接进主界面。
+    // Mock 데모: 실제 로그인 없이 가짜 token을 반환해 라우트 가드를 통과하고 메인 화면으로 진입한다.
     return localStorage.getItem(TOKEN_KEY) ?? (process.env.NEXT_PUBLIC_MOCK === "1" ? "mock-demo" : null);
   },
 
   setToken(token: string): void {
     localStorage.setItem(TOKEN_KEY, token);
-    // 同步写 cookie，供 Next.js middleware 服务端读取
+    // Next.js middleware 서버에서 읽을 수 있도록 cookie를 동기 저장한다.
     document.cookie = `${TOKEN_KEY}=${encodeURIComponent(token)}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`;
   },
 
@@ -28,7 +28,7 @@ export const auth = {
     document.cookie = `${TOKEN_KEY}=; path=/; max-age=0`;
   },
 
-  // 从 JWT payload 的 sub 字段解析当前用户，仅用于展示，不做签名验证。
+  // JWT payload의 sub에서 현재 사용자를 읽는다. 표시 전용이며 서명 검증은 하지 않는다.
   getCurrentUser(): CurrentUser | null {
     const token = this.getToken();
     if (!token) return null;

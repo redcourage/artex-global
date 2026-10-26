@@ -21,7 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 import type { Agent, Tool } from "@/lib/types";
 
-// Traffic tools are host tools gated by the global 流量捕获 switch: bindable, but
+// 트래픽 도구는 전역 트래픽 캡처 설정으로 제어하는 호스트 도구다. 연결 가능하지만
 // only usable when capture is on. Keep in sync with traffic.SeedToolMetas.
 const TRAFFIC_TOOL_KEYS = new Set(["traffic_search", "traffic_get"]);
 
@@ -141,7 +141,7 @@ function ToolEditor({
   onClose: () => void;
 }) {
   const t = useTranslations("toolsPage");
-  // traffic tools can't be bound/enabled until the global 流量捕获 switch is on.
+  // 트래픽 도구는 전역 트래픽 캡처를 켜야 연결/활성화할 수 있다.
   const trafficGated = TRAFFIC_TOOL_KEYS.has(tool.key) && !captureOn;
   const [description, setDescription] = React.useState(tool.description);
   const [bound, setBound] = React.useState<string[]>(tool.agents);
@@ -511,7 +511,7 @@ export default function ToolsPage() {
   );
 }
 
-// ---- 自定义工具编辑器 ----
+// ---- 사용자 정의 도구 편집기 ----
 
 type ExecState = {
   command: string;
