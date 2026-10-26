@@ -112,7 +112,7 @@ docker compose up -d          # artex 이미지 + postgres 를 함께 기동
 
 ### 그 밖의 설치 방법
 
-원본 저장소는 설치 스크립트(`./install.sh`), 사전 컴파일 바이너리(Releases), 소스 단일 바이너리 컴파일 등 여러 방법을 제공합니다. 명령과 절차는 [`README.zh.md`](README.zh.md#安装)의 "安装"(설치) 절에 정리되어 있으며, 아래 핵심만 옮깁니다.
+원본 저장소는 설치 스크립트(`./install.sh`), 사전 컴파일 바이너리(Releases), 소스 단일 바이너리 컴파일 등 여러 방법을 제공합니다. 명령과 절차는 [`README.zh.md`](README.zh.md#安装)의 "설치" 절에 정리되어 있으며, 아래 핵심만 옮깁니다.
 
 - **설치 스크립트:** `./install.sh` 를 실행하면 Docker 감지·설치 후 "① 전부 Docker" 또는 "② 로컬 컴파일 실행"을 고르게 합니다. "① 전부 Docker" 는 위 빠른 시작과 같은 이미지(`ghcr.io/jiwoochris/artex-global`)를 받아 기동하고, "② 로컬 컴파일 실행"은 아래 **소스에서 단일 바이너리 컴파일**과 같은 방식으로 직접 빌드합니다.
 - **소스에서 단일 바이너리 컴파일:**
@@ -379,7 +379,7 @@ flowchart TB
 - 테스트: `go test ./...`
 - Mock 미리 보기(백엔드 없이): `cd web && NEXT_PUBLIC_MOCK=1 npm run dev`
 
-그 밖의 개발 항목(수동 취약점 재검증 등)은 [`README.zh.md`](README.zh.md#开发)의 "开发"(개발) 절을 참고하십시오.
+그 밖의 개발 항목(수동 취약점 재검증 등)은 [`README.zh.md`](README.zh.md#开发)의 "개발" 절을 참고하십시오.
 
 이 글로벌판이 상류 ARTEX 에 더한 변경은 [변경 이력(CHANGELOG.md)](CHANGELOG.md)에 정리되어 있습니다.
 

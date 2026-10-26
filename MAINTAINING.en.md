@@ -8,10 +8,11 @@ the global (multilingual) edition. Contribution scope, legal responsibility, and
 [CONTRIBUTING.en.md](CONTRIBUTING.en.md); user-facing guidance lives in [README.md](README.md).
 This document therefore focuses solely on **how that policy is actually enforced**.
 
-The core goal of the localization can be summed up in one sentence: **preserve the original's
-judgment performance exactly, while translating only the user-facing output into the selected language (English by default)**. That
-boundary is easy to blur every time upstream updates, so the procedures and checks below prevent
-translation drift.
+Under the user's **2026-10-27 approval**, localization covers Chinese prose throughout the
+repository, **including all internal prompts**, and translates it into Korean. Preserve the original
+meaning, authority, constraints, and stop conditions, while keeping user-facing output in the
+configured language (English by default). This approval supersedes the earlier policy of retaining
+internal prompts in Chinese. The procedures below prevent both translation drift and semantic drift.
 
 ---
 
@@ -25,34 +26,37 @@ translate and applying each accordingly."
 
 The deliverables fall into three groups.
 
-- **Assets kept in the original language** (section 2). Translating them breaks performance or the
-  ability to diff against upstream.
-- **Output-language enforcement fixed in code.** `langDirective()` in `agent/prompt.go` appends to
-  the end of each role's system prompt the instruction "write user-facing output in the selected language."
-- **User-facing strings translated for each display language.** The UI strings live in `web/messages/{en,ko,zh,es}.json`;
-  the server's user-facing response strings live in named constants in each Go file.
+- **Korean prose, including internal prompts.** Translate comments, tool descriptions, built-in
+  prompts, and strings used both for display and as agent input, preserving their meaning and constraints.
+- **Output-language enforcement fixed in code.** `langDirective()` in `agent/outputlang.go` appends
+  the selected output-language instruction to each role's system prompt. Preserve support for
+  `en`, `ko`, `zh`, `es`, and `ja`.
+- **Original-language exceptions** (section 2). Preserve locale assets, evidence, parser and
+  detection identifiers, and multilingual fixtures where their original form is required.
 
 ---
 
-## 2. Assets preserved in the original language (do not translate)
+## 2. Exceptions that retain their original form
 
-The following assets keep their original language (Chinese or English) and are not translated. When
-an upstream change touches these assets, **apply it as is, without translating**.
+Internal prompts are translation targets. Preserve originals only where their form carries a
+technical contract, source evidence, or an intentional language distinction.
 
-- **The agent's internal reasoning prompts (the "brain" body).** These are the behavioral-instruction
-  bodies in `agent/promptcatalog.go` and the DB seed `agent_prompts`. The behavior was benchmarked
-  against the original (Chinese), so translating it introduces drift in the agent's judgment.
-- **Strings that serve both as display and as agent input.** Some text that appears on the activity
-  timeline while also being fed back as planner/reporter input context (task-abort reasons,
-  interception-block messages, traffic-evidence helpers, and so on) is kept in the original, because
-  a single record serves two purposes. The rationale is recorded case by case under the "brain
-  boundary records" in `work/DECISIONS-FOR-JIWOO.md`.
-- **The original Chinese documents and strings.** Documents keep the original in `README.zh.md` and
-  UI strings keep it in `web/messages/zh.json`, so that diffing against upstream changes stays easy.
-  Korean translations are filled in only in `web/messages/ko.json`.
-- **Command, payload, code, URL, identifier, and log originals.** These are the originals needed for
-  analysis, so they are not translated. Go code comments are the lowest priority as well and stay in
-  the original until the upstream diff is finished.
+- **Locale-specific documents and messages.** Keep intentional Chinese and Japanese locale values
+  such as `README.zh.md`, `web/messages/zh.json`, and `web/messages/ja.json`, plus native language
+  labels used to select a locale.
+- **Technical identifiers and source evidence.** Preserve API and tool names, JSON keys, template
+  variables, commands, payloads, URLs, raw logs, and quoted target responses. Translate the prose
+  around them without rewriting the source material.
+- **Parser and detection identifiers.** Preserve compatibility markers such as `[模型]`, the fixed
+  detection prefix `【ARTEX 平台管控·非目标防御】`, and original external error tokens used by classifiers.
+  Translate surrounding explanations and reasons. New Korean parser labels must retain compatibility
+  with previously accepted original labels.
+- **Multilingual test fixtures.** Keep inputs deliberately testing Chinese/Japanese handling,
+  Unicode behavior, original evidence, or parser compatibility. Translate comments and diagnostics;
+  update expected strings only when the corresponding production prose deliberately changes.
+
+Do not bulk-translate saved user input, prompt overrides, or historical records. A source translation
+must not weaken tests of authority, constraints, stop conditions, output languages, or compatibility.
 
 ---
 
@@ -99,11 +103,13 @@ git log --name-status --oneline d003372..upstream/main
 
 The classification criteria are as follows.
 
-- If `agent/promptcatalog.go` / the `agent_prompts` seed, or the display-and-input strings of
-  section 2, changed → **apply as is, without translating**.
-- If Go backend logic (`db/`, `llmrec/`, `server/`, and so on) changed → apply the logic as is, but
-  check for **newly introduced user-facing strings** (`writeErr`, and the like) and translate those
-  into Korean constants.
+- If `agent/promptcatalog.go`, the `agent_prompts` seed, internal prompts, or strings used for both
+  display and agent input changed → **translate their prose into Korean**, preserving meaning,
+  authority, constraints, and stop conditions. Keep technical names, JSON keys, template variables,
+  and section 2 exceptions unchanged; do not overwrite saved user values.
+- If Go backend logic (`db/`, `llmrec/`, `server/`, and so on) changed → apply the logic as is and
+  translate newly introduced Chinese comments and prose, including user-facing strings (`writeErr`
+  and similar calls), into Korean.
 - If the UI (`web/src/**`) changed and introduced **new screen strings** → do not hard-code them;
   add them under the same key to `web/messages/zh.json` (original) and `web/messages/ko.json`
   (translation).
@@ -137,7 +143,7 @@ applying.
 
 ## 5. Translation-symmetry and drift checks
 
-After applying an upstream change or doing translation work, verify the following three things.
+After applying an upstream change or doing translation work, run the checks below.
 
 ### 5.1 ko ↔ zh message symmetry and user-facing CJK
 
@@ -170,17 +176,21 @@ Baseline (2026-10-05): `ko leaf keys = 2950`, `zh leaf keys = 2950`, `key symdif
 `ko vals w/CJK = 0`. The key count can grow as upstream changes are applied, but ko and zh must always
 be equal, and `key symdiff` and `ko vals w/CJK` must always be 0.
 
-### 5.2 Confirm that brain assets keep their original language
+### 5.2 Verify Korean prompt meaning and preserved contracts
 
-The brain body keeps the original Chinese, so if the **count of Han-character lines drops to 0** in
-the check below, that is a signal that the brain was accidentally translated and contaminated.
+Internal prompts are now Korean under the 2026-10-27 approval. Verify that the translation preserves
+meaning and behavioral contracts rather than requiring a minimum number of Chinese characters.
 
 ```bash
-python3 -c "import re; han=re.compile(r'[㐀-鿿]'); t=open('agent/promptcatalog.go').read(); print('promptcatalog.go CJK lines =', sum(1 for l in t.splitlines() if han.search(l)))"
+go test ./agent ./intercept ./guard ./sidequestion
+python3 scripts/audit-korean-localization.py --check
 ```
 
-Baseline (2026-10-05): `promptcatalog.go CJK lines = 70`. If this number drops sharply, check whether
-the brain body was translated.
+The tests cover selected output languages and instruction placement, parser compatibility, fixed
+detection markers, and side-question source boundaries. The source audit distinguishes translated
+prose from the justified original-language exceptions in section 2. These checks do not prove prompt
+meaning by themselves: review original and translated instructions together for authority, constraints,
+stop conditions, ordering, numeric limits, and placeholders.
 
 ### 5.3 Make sure no original language leaks into the build output
 
