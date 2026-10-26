@@ -1,0 +1,1375 @@
+{
+  "version": 1,
+  "base_commit": "0d4a97bd27edf023a7002eaa4214cd9f4f807752",
+  "files": {
+    "CHANGELOG.en.md": {
+      "mode": "exact-lines",
+      "reason": "지원 언어의 자국어 이름, 보존 문서의 원래 앵커, 호환 식별자 또는 Unicode 검색 예시.",
+      "sha256_counts": {
+        "43ad55ec8312556d1d2dfc913089acd4546ef6f1916a7c92f201a4fdd7fd2cce": 1
+      }
+    },
+    "CHANGELOG.md": {
+      "mode": "exact-lines",
+      "reason": "지원 언어의 자국어 이름, 보존 문서의 원래 앵커, 호환 식별자 또는 Unicode 검색 예시.",
+      "sha256_counts": {
+        "33433306c2cb8c9b3d2bab8b92adb1bcca7fe198c4bd39e15cece367bd93dd47": 1
+      }
+    },
+    "CHANGELOG.zh.md": {
+      "mode": "localized-resource",
+      "reason": "지원 언어 리소스 또는 상류 원문 문서. 한국어 소스로 대체하지 않음."
+    },
+    "MAINTAINING.en.md": {
+      "mode": "exact-lines",
+      "reason": "지원 언어의 자국어 이름, 보존 문서의 원래 앵커, 호환 식별자 또는 Unicode 검색 예시.",
+      "sha256_counts": {
+        "77f3244f2b1017dac6f02704a1c78d182b9949904100ab38dfc204fcdd6b6725": 1,
+        "90e9c684095866298af0afba391f8a8d9f104c9a8d0b1ebb1ad8ffff9b59e021": 1,
+        "c448a491060b33d34cbb2a8b1865f6c7f56b1e5d5bea77ab4d23778ec18d1fb6": 1
+      }
+    },
+    "MAINTAINING.md": {
+      "mode": "exact-lines",
+      "reason": "지원 언어의 자국어 이름, 보존 문서의 원래 앵커, 호환 식별자 또는 Unicode 검색 예시.",
+      "sha256_counts": {
+        "77f3244f2b1017dac6f02704a1c78d182b9949904100ab38dfc204fcdd6b6725": 1,
+        "93222f8aed08d2684f376a6122c74e097ce69d7ad50eeab2653d12eb3d397ff4": 1
+      }
+    },
+    "README.es.md": {
+      "mode": "exact-lines",
+      "reason": "지원 언어의 자국어 이름, 보존 문서의 원래 앵커, 호환 식별자 또는 Unicode 검색 예시.",
+      "sha256_counts": {
+        "2f5fcd4e68edadc6b8a324995c1e73419e194367dfc8663a1bbba251ba425eb8": 1,
+        "ac0d8273a0f8537cf792506454bc01b45c124c06bf71f987f1f8ac8853f3b66b": 1,
+        "bb010bdccb374ae85387775262fc7b614aaa1ec2241dd7d40bb8a88a70345f7d": 1,
+        "bc989eb037139d7eb4e6fbf409549c5c1809897cba586178779a181eedfb659e": 1,
+        "f1e7066f68d5751621fff0ebf53a728d5d62312e2c7a5a3397df6d06b71ebd30": 1
+      }
+    },
+    "README.ja.md": {
+      "mode": "localized-resource",
+      "reason": "지원 언어 리소스 또는 상류 원문 문서. 한국어 소스로 대체하지 않음."
+    },
+    "README.ko.md": {
+      "mode": "exact-lines",
+      "reason": "지원 언어의 자국어 이름, 보존 문서의 원래 앵커, 호환 식별자 또는 Unicode 검색 예시.",
+      "sha256_counts": {
+        "01602e343abc322341791cac66f81617d007b4aee6ad555179150279d4258c3e": 1,
+        "1762d8d254fca71073ef3710eeb6754c1e24432ff14eb17fb79baf6ba8d409e6": 1,
+        "1ad111bbeabcdf2c840d8bfd3632cd674a1445e45a11a9fbcd3caab5ae1b1721": 1,
+        "1d86a3cf4173f0be83d5e862af2019b22b7393a6494cab8d0aa527a6197a341c": 1,
+        "6b549aa67852127daa0395bd710aa95c64f05c8e76cf367bf182e20237739fb5": 1
+      }
+    },
+    "README.md": {
+      "mode": "exact-lines",
+      "reason": "지원 언어의 자국어 이름, 보존 문서의 원래 앵커, 호환 식별자 또는 Unicode 검색 예시.",
+      "sha256_counts": {
+        "423fe998dcbc27449fd4e473e7fb05fe277bff7e133e1b8b2897447843233246": 1,
+        "435e2b28f0ec1475124e1acdb5b73f799cd60f6ae6560aee9210b6ac80e7dd78": 1,
+        "814cf9843132eda08e74572c56cb539d947b2b4ec7fe2e646db126bd83505418": 1,
+        "8bcb87cdc9d11cf2fd926ba50e31cfe0fd765c6fd7cc3abc38dcf341ae5a45e0": 1,
+        "934259a3ae827b2846984fc6f1182901937db56d56067a064c0a324e00602807": 1
+      }
+    },
+    "README.zh.md": {
+      "mode": "localized-resource",
+      "reason": "지원 언어 리소스 또는 상류 원문 문서. 한국어 소스로 대체하지 않음."
+    },
+    "agent/blackboard_inheritance_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "b9b2e7bf99bba4fb0157d609482c1e72d364ad695211b95f66939dc1883a88a9": 1
+      }
+    },
+    "agent/prompt_now_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "65a47705a8904996cd38f2c856bbe512dbd237a7a337d99b5ab95b10c0cd835b": 1,
+        "70a0928c0528cebd8adbe2a54292abefbf31d81d3b6c5c650aa1529578f0ad76": 1,
+        "8857c4344c183e5e054760ef578798611ffec259feff2de485f10c2487cc4c6d": 1,
+        "a0ff7cebe8c50f2da04fc8dbe0f68f4398c3e93a3099afcf01dc8bf7ba9df421": 1,
+        "a5c9ac027d0b72d4a04b1022013e5606e5ca5234ca7bc3e0bee42dfcb033f16a": 1,
+        "d2de13dcc304457f823ca94d363f47233127fca36aab5990858806af5a385c78": 1
+      }
+    },
+    "agent/prompt_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "1204a494bc82fdf866f49f9e691771b03f49e7fbff3038bbe722ad5f20ad7427": 1,
+        "5a02357f6a986b52f8e544585f3fb14bd59e271823555e0e6d92e0d47d90b3eb": 1,
+        "6dd29b8f5b3c9964ec8f56df5301a837da55bfac436bed796e14cc74420ab470": 1,
+        "a2560e70df66b6a150acb743e0e9b131a62bbbd20b4303505cd7c8f488f9a4bf": 1,
+        "ae1b699bdd7352822216e246dd2b8c0933edd516ef10fb41cb3f073fa2cf0e5b": 1,
+        "c61ae8b6a43081b8b8e1f3eb19f521882280b5225e9d492a58c017c00dcc34c4": 1,
+        "c9a76e5f691fe9eb5e405415c72aea2c81a51ec9e25125a2266e54291cf87715": 1,
+        "e0788dd01e71b38de0558535404f258d3f5ea2135acd9fa352f9f18b9d8d62ae": 1
+      }
+    },
+    "agent/provider.go": {
+      "mode": "exact-lines",
+      "reason": "중국어 대상 응답·공급자 오류·ICP를 식별하는 기존 정규식/매칭 문자열. 문서 경로 참조도 보존함.",
+      "sha256_counts": {
+        "d4fc0af71c6bc1dfa65e85c059291968728b48875b8e320e6efea272858ba8a8": 1,
+        "f71922e3bd02dd2ed50ee5dff021c72dde488ea38c2da2ea60c530f270a9a37b": 1
+      }
+    },
+    "agent/provider_quota_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "76e8571bfbe5ef361393cdfd36c6759895bf345eded6abab79432f696c35abf6": 1
+      }
+    },
+    "agent/review_context_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "a39a266605eecb9820b181a8afd88cba4db38ae101a3a01d3f23439e5969dcee": 1,
+        "d395ac2418de724db3a9dcd59d285f8d4f0647c406757f0635211172a9c2326b": 1,
+        "e941f4155b829801a555fa69c514ce742203441e21a06bba796489e5ccf74cdc": 1,
+        "ef46f2f839c396833b520102a747712f1a1725e0b31e2e4b8a0e77990f61d510": 1
+      }
+    },
+    "agent/terminalreason_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "a4ef7ab07116f276050fb3059220da03be9a63c0ca0138ff2ee04d14e00967ac": 1,
+        "a7d6b65be65f213fc713d8d59876150dc6a849dbf545069f2c0502c2bdf0793c": 1,
+        "a8d1e1f9440465fe7cb597a5666ec50f40d04da1e3e82138b1a2717c63ee590f": 1,
+        "e815f4fb6185db26d1884dca6ccbc8f0347de4d2d83a0d70b08702677e97e737": 1
+      }
+    },
+    "agent/tools_overview_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "2fe8952e6c397bfb2ab8569218dc3147e5a693d4c8268ea6cfc8905eb77855cb": 1
+      }
+    },
+    "agent/wrapup.go": {
+      "mode": "exact-lines",
+      "reason": "상류 설계 문서의 기존 파일명·경로 참조. 링크 식별자를 번역하지 않음.",
+      "sha256_counts": {
+        "816c7dab30a92eb06f4bd66f7449ee9082501443bd32180bb0947f8a8ee99cdf": 1
+      }
+    },
+    "config/msg_i18n.go": {
+      "mode": "exact-lines",
+      "reason": "지원하는 중국어·일본어 로캘의 실제 값 또는 언어 선택 이름. 한국어 기본 설명과 구분함.",
+      "sha256_counts": {
+        "0391ae67a6e1217a4ce5984b84f1c368ba1889632f03327e946ef035a0c4a937": 1,
+        "05f95b5390b6c707ccf70e8fdf19c45004de043d2d0d6674fe8e91937259f2b3": 1,
+        "08a3094d2ec98f30baa2b779b9dc3663e1079b6d74f88a611db60c3d1c06ecf3": 1,
+        "09c742734e12a081124a2705358e058e18226a7ee4335faaaea4ac4ac426bf21": 1,
+        "0ab342f886043bc221ad8d49b5fa44a1bc6724e4dd0fb37f1bffa3fc3abe96c6": 1,
+        "0af9723ca2e0e57d96d9ba9001ee15bce12ea77dd88175b954e7dd25786d3159": 1,
+        "0fee382a0d68a267ed645e3392f6e3c9197551bd7330d9fd90dad6f81a33aac8": 1,
+        "15b579de09e2d9ef719198d54a61465d05a520f245ec42fccb51f74c37d7d61b": 1,
+        "177fc8b2716e62705151782b9211b5c68cfbd2880abf128d9ee38aa2293110a7": 1,
+        "195578ea7dceaded58dc72db8e0c7337d13a10f88e039cd87fac40d9dca9d104": 1,
+        "1b287703ca2264a0a142f781b86ffc8912a0b5c4f3e6add986fef212e5492da2": 1,
+        "1c1a16b000c946a79f48f35480a50e2b8eaad986fedc5d592b54242884caad79": 1,
+        "1c9953d4c04bbb534732f840673733980d7019c43f983a65a880dac7f86c99a7": 1,
+        "1f6140a2663ef1f8cbbf1368ac1086aeffa8bebd903212a75d3c0f5c037f1e35": 1,
+        "227f0de81b006f00ccbe348e110926a30abeb970614ae634c3aa45b7841c7d89": 1,
+        "22c135f97e789f8d5f58f8169ae7cafc285a45681f92703b1184b2b6be120192": 1,
+        "25130781f574072aa9e22da33fd4df32fa4ee79c8f356014d19ab34f0799f1a0": 1,
+        "2527730ba5f0a1580eb98014e82452d4cf079e970fd2cc4bd32e2ba3eea742cf": 1,
+        "302e76b41bd7b2360f42444e5ece62118e3af7b085e80899c405eaaecba9f18d": 1,
+        "311d7325dd0b2efdee2f0bdbec951e76e2335a1359e40f7a72d813f9434ddc23": 1,
+        "398e12d5e9625afd5bc66d0ce603c8aeaaf9c7a0daa30a4be6f4bdcc837561eb": 1,
+        "3d0ab4a151a58ab6e8900fbef8dd7048982a6f8da696708b3e6a2d06e1cdbb29": 1,
+        "40a288569185437cf57a67e4076980578def0af06f09c361da57e42f9e8d8800": 1,
+        "47aa8fa10eb82296849aece5542d53e2e6a9208c59315d8cbb242f9b923be296": 1,
+        "56e8548b7df047a5254d856efb7980c738b5201acf30daf77518d21d99048061": 1,
+        "579ee4e60f9650618fba6e16768a14e2e4a0fdd8cb50c6173cc017d32a51546e": 1,
+        "58cf689e93957d9249b9cd19aa87bd110ee95cf3df7a1a868d137473862d9730": 1,
+        "60180bd3b49d194ad0e3e278cc581f1b6df97296f24849916cf2e1f6e26866ac": 1,
+        "606a9f58bcba626e85f5848bc18fc17b79573d3a530db0dab8d1825939a66f96": 1,
+        "652a8d9e28c69119d3f69dec9d23f9dc9669718fb26e3e2806a6d66b2a196e01": 1,
+        "6a1f16cfa46dccaf5669764010a5a361332e60e661ad77fb8f3879da0e15da1f": 1,
+        "71a4c6be9aec50a2d587d916ee323ef87ba5ecbbe585ade28389dd4ed455a5db": 1,
+        "7493d7bf07a73a0a10a1d9a4089681cf7747f948bca5559327f488e91b6cc988": 1,
+        "750f0fbf2ab733a05047dfac3d70982060b0a5511db2ffcc7d53afe3926631db": 1,
+        "82e8ccfa5b880a86f841f6925dc5a1da81ab61332fe49f0b4c60617558737992": 1,
+        "82f7c6ef6a85fad718e88fe234bac7ea485f649d0a3b74712d253dc43b49dbb7": 1,
+        "849163255f21c52489cce873310e5fab861bd01a1100eb32c128fb8125c01718": 1,
+        "869a9b163061beff7a1b81a5ed310055da38e86f94a6c7eb21d7ce595d6516e9": 1,
+        "88d464073532eb20e4a0e3bae102a9f260255a969275ee3c6a0dea06d0b3956d": 1,
+        "8a80e659e1ef98550c782f9c2e139bf5a5dc9e6b4039d5075da28973379b3a8d": 1,
+        "8a94a9887272fa0925a5b856eaa9d1aaabb813a4bfc899563e02fd9eb7de0f5d": 1,
+        "8e39bf278b9663d72d25f2d0ddd9c049e2e459d1204bc8d00c70b481fba69fe9": 1,
+        "8ebef3313358ca3b196129100e0c4f3510dc2317bb4ffc1911ac064e8e370a17": 1,
+        "8eee6ad13c2ac5841e12038ffa77f48f4639463eb2b1f59fc8b0cb156e0af233": 1,
+        "a3e3c34d5aa92ca0f0ba575c025019ea46de6a463b8f6bbdbbc0b8736215cadb": 1,
+        "ac856b020898d119a893f1dc3199a081ad42c3dea6de84a04b85b296f4ade47e": 1,
+        "b58482bfdff392dc70204d4f0fb2fb74cbf1b09395056a9081a080ede4e6a254": 1,
+        "b85b882c7c7a4917b5698c73c74ba32be8565d5fa5273cae6f91d30f33fc991e": 1,
+        "be36733fde83451f19885522207c9b0e33e618ff14d509dc8c070d03a5a2feb3": 1,
+        "c4b7626ccfa44a457ae9a26b43ab0814be866236986e9fac3edde3cc819106cb": 1,
+        "ca201c65b72277368b146dbbec42b8513a31b696fedad78276abc8bedd71177e": 1,
+        "ccef550333ef425987272c1631bb635bbd1413aabe1a847c9721bac7a462dcd1": 1,
+        "d006da78c1eb785bb897bb4a7b83d1b1d70a40fdf3e3bddb02923c7d5b99cffa": 1,
+        "d8520431800cf3461f0751df8fd999d11255f605a7bcc96d81cd4196a1d4c036": 1,
+        "d935ad834378ae3feb2997eeaa4948c67093377118849b9dc494413a2538a2a7": 1,
+        "e3595195c1268486a10a4d9ae8e790f4d17e82ddd62c0ffc0f3208155cea1f64": 1,
+        "e46737859e6ede88125fe65e6e3ede2a90e435bd5d4b039e29e5a25c0c7045c8": 1,
+        "e5621c917c885b9327bb89dad98141ae2a646a36799a93f49c2e3375a5d936ac": 1,
+        "e6e7a64a61be63389cee668bf7f9936745b7411e6c909fe4ac822aa51b812c9a": 1,
+        "eabb1229092e78dbcd5abbdfa6336dba9366bec3eee5c9d3b568d9c237fb324d": 1,
+        "ef8c3639e2df7d573f6a77852d6a0fc1e97e18a66e9cfef5262eb6fb5e018a9b": 1,
+        "f0263f675d2c96083165c5d28ec1021492973a389e01ad321c3f71faa53e78e9": 1,
+        "f1334e24aa57ec44d472818bcf7cf8d1149f67e1a3a8258538f2fe496af6b7d1": 1,
+        "f2b23a44db266b4ad3f43f46ea8ca150432a6d569b91395dcba7867b68b21303": 1,
+        "f3d4db3046e501bfa5f0657770561f22889bbcf6d4491c2a720abe6dc50fec01": 1,
+        "f4392c3b4a6e6f5eabc9f3be590ea631953311575c4ebeaea46dac4f24915934": 1,
+        "fb938acfd5e9ca50ccf2435259910ba6b94da1a1d23a3ca18e334199e0b761ee": 1,
+        "fd53b16a41c6e7f70c63712381e8ef92c4f146e4263fb7f999d2669085cd2342": 1
+      }
+    },
+    "db/company_scope.go": {
+      "mode": "exact-lines",
+      "reason": "중국어 대상 응답·공급자 오류·ICP를 식별하는 기존 정규식/매칭 문자열. 문서 경로 참조도 보존함.",
+      "sha256_counts": {
+        "aa7d15507b1bcd79e0abb73c03f8e3f5eac5ded4fdbdac0c0396fee31808e315": 1
+      }
+    },
+    "db/company_scope_consistency_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "10bf00af401e02bedbb94eba2ec025949e12b4ea59e4e709d48d6eda314e8df0": 1,
+        "4180af7cf07d0047d1d2c86a26fa864572b59a525ff56ca3b4cba3544b694c64": 1
+      }
+    },
+    "db/company_scope_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "0b47a2036c7b750fdfca5353c7419d28fded7fe00d6854eac17478973ce1c473": 1,
+        "4516f359b63eee0ffddc67b054bd77c3546011f95e6d364dae168d32dfc8137a": 1,
+        "947383a9268c23186c22aea4605a6d9c46b3bf58b713a8c1c7106d121d1825e1": 1,
+        "96e673ee64ddaf82bcf09949ab994b5fe9dc328fd6e440a90755eb288c8f4498": 1,
+        "acd624d870bdd762f89152233ffaf6f8af18c66b8ece580877b07ce9e619a612": 1,
+        "bc82eddb9e99a2342386d7aedb725f873cbb6da440885c032e536ca052bbe786": 1,
+        "c46eace4cdede26896f5e8ba1e352054b0d494d83a583965f85e4fd0589449b3": 1,
+        "cd542ae40ccd0c0f908cb2d2a0284003e942f419c92c74b0ce7eaba4b8898fff": 1,
+        "e0e47dc7282b533d40fccdda049f7666df860f0c3b8d29f4e49d3fe9a8c216e5": 1,
+        "e103be5148b29098723e9bcead0249668780b7181bda2d1852d7c58ef94be933": 1
+      }
+    },
+    "db/config_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "311536c857c0e49cdba29f8211ada46947d5643e812a1d42223db734a376b7e2": 1,
+        "59c4fe7925ed9a4c2288c93a1dbdd5c32e206c0e0f4e6c4c20e12e44c1816605": 1,
+        "8ce9922cf93ae1c5e5511f361a5eacac69bb1e45d762dc251e9676e29f6c42ae": 1
+      }
+    },
+    "db/findings_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "20789be6cda7e35d6ed4d1e7bd8c6303ea4413b5ad99e5c678d5aae4e24de21d": 1,
+        "24e8a0f90957e935ad6133ae0460908364085821ec3aa4dabd52bb191520fe60": 1,
+        "52023e76a932c2cee3f12caab83ba20c75cbf11f49b710f875592d6b008dc20d": 1,
+        "5d0e0caba8dd60d1e85d2e6e920ab4e17517f27bd2ccd234961e09e867dd76cd": 1,
+        "7e0ed3d781dfc17ffe65288063eb1b55949ffea143e4a0099db996af8eb30ba1": 1,
+        "8e8c5578826d8e5d874a6b01e471908ff64c71837be219610edac186495509e4": 1,
+        "a92d0b69e844f0cd6af330be230fa08c0161989e998722c5253cdd63ca6dcea5": 1,
+        "c0a6211b8ed1c6138c9cf2ce0d402300089ce268793f0675bbd2f69d4e88ee62": 1
+      }
+    },
+    "db/intercept.go": {
+      "mode": "exact-lines",
+      "reason": "기존 저장 형식, 멘션 프로토콜, 승인 출처, 마이그레이션 비교 또는 과거 판정·로그 해석에 필요한 고정 문자열.",
+      "sha256_counts": {
+        "a6ab86acb388567f187763f44d776e11d7da2ad665bdbd4029fe4d9bfd6bdc90": 1,
+        "e4f27e771a32fc21f4b78708714b4fe88b740e2132588297b8f3e620e9b7d6bc": 1
+      }
+    },
+    "db/intercept_detail_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "a46ec7c6878531a8ea6e1ec645b4e743f9002df6c8730864cf82346d234be113": 1
+      }
+    },
+    "db/intercept_filter_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "72720764c0e7cc17376bbf4cf7f27b94e96d6fca07cde4999f8354de1db79489": 1
+      }
+    },
+    "db/notification_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "00540ad22603ac671338549a8c4428e88f854ac4a4715e22c086793e757d02b4": 1,
+        "037de49065f838d1eca1c619f5f22773a12a1da03710acf1bf75b1547986236f": 1,
+        "10e65b109cc5da4acb15d68dacfe16c36586f5ead6611038901a94415344a84a": 1,
+        "162dfef0c6a6905c46c49ea2f805c11f1ae3615b57f021e15148a6d9ee35aeab": 1,
+        "1c33141247abbd61b3fffc82adedd804d4d6edb39eda613e3516a18e173cd01e": 1,
+        "1e46b02274038516a85c33daa5d6d06abce6f1ee4c0125398346e35dc8e86111": 1,
+        "1f0959216b8729758cc6763b43782132de85bb0ac0e30e53710028d2b6766f8f": 1,
+        "246c95aadcf39af188cac0d2cfdb90c5f058d8c8738a6da92c2819cb4bbd3efd": 1,
+        "3a5494759a670b46b4dfb34fb2477e3d6f35c3596a3f401981ee756eed611f08": 1,
+        "48fdc585b5a643f022d376416c79d10bbc9643ac43f5c01b41770e5aa9741456": 1,
+        "53c049f6e74ff51072f74304b0d9e86e9a51432baaca7787cf387ece13a74591": 1,
+        "5ab7bd515ad2fd51a7f0e88ce4e6b30e98761d7d7e05370e68ecbbee81d15ac6": 1,
+        "6890db89bf2fce8402d3c352fa33f322eacd79a10759fdabb1867abe1d10e557": 1,
+        "69342693a5d84101432e66c7ad0d0cccfaaaf92c9d3cde01342d10c43f1bcfb5": 1,
+        "7bdaf1d25530c6806f34a271a48be5bd6603664a47e066c24c2c2947bb87926b": 1,
+        "9ae4e60f6e5ec04080260d6bad77f5c0fc9c486840eeab9422774a34c9abdfaf": 1,
+        "bedc47c04159f02359606483fc2772e6052d641b8c296c3470337c994867c15b": 1,
+        "c2dd6e3b745e2e20252b362fe97d0724f7a436501c7cd4d4d3735be4a4cdd344": 1,
+        "c7c69b94cf476e0ba643d30e51625d2398760dd4fc4846459d7c1cbf6244e3a9": 1,
+        "cd69de893852e460ee0674e3d1cbf31f4f828a5ca5a7e9cd4fb8dba9343f33d1": 1,
+        "d8d225907b2f5ff9c1ba33b45435b8be225c73f018df1464d9653280754cfa24": 1,
+        "e049a9a0f66afe24d96046ab705229c07ff96ab4bc20fa6a4a0cdf181d8f39df": 2,
+        "ea965cfcb351f9381919b9692938af0485fe7f890d5984b815ef88c26454cf90": 1
+      }
+    },
+    "db/schema.sql": {
+      "mode": "exact-lines",
+      "reason": "기존 저장 형식, 멘션 프로토콜, 승인 출처, 마이그레이션 비교 또는 과거 판정·로그 해석에 필요한 고정 문자열.",
+      "sha256_counts": {
+        "3e52dfdeb0fea89afb8d7f4052bbc78975719a5cc018916ef1d5cc962213afce": 1
+      }
+    },
+    "db/task_archives_restore.go": {
+      "mode": "exact-lines",
+      "reason": "기존 저장 형식, 멘션 프로토콜, 승인 출처, 마이그레이션 비교 또는 과거 판정·로그 해석에 필요한 고정 문자열.",
+      "sha256_counts": {
+        "b419a695287517766edac59f1be959dc530ad525cbcb7cb3c3ceff2d2705598e": 1
+      }
+    },
+    "db/task_assets_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "c2ea0cdb2a6fdfd246f6ed3d7ca851e7771b9d77e8913c7ca537177357c9e143": 1
+      }
+    },
+    "db/task_context_unit_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "1d14a5e27d5a5c54100a8f1be67d05503e644e9309d0fe0cfc28e7157fac4993": 1
+      }
+    },
+    "db/tasks_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "ad63096158a3d6679c03ff9241262192eff1bd93f9fed959e4c950402b926359": 1
+      }
+    },
+    "detections/indicators/artex_indicators.csv": {
+      "mode": "exact-lines",
+      "reason": "탐지 규칙·지표·이력 fixture와 공유하는 원본 가드 식별자. 본문만 한국어로 번역함.",
+      "sha256_counts": {
+        "65b6089aadf3b4d84c83620dbe55751910ce5c0f972271fd15416d9cea5739e7": 1
+      }
+    },
+    "detections/indicators/artex_indicators.misp.json": {
+      "mode": "exact-lines",
+      "reason": "탐지 규칙·지표·이력 fixture와 공유하는 원본 가드 식별자. 본문만 한국어로 번역함.",
+      "sha256_counts": {
+        "66b16a24e644d7b82ba73c5b91507cbef7ee84dac9f274c9d972fa40e255a79a": 1
+      }
+    },
+    "detections/sigma/artex_guard_audit_framing.yml": {
+      "mode": "exact-lines",
+      "reason": "탐지 규칙·지표·이력 fixture와 공유하는 원본 가드 식별자. 본문만 한국어로 번역함.",
+      "sha256_counts": {
+        "dee414e408601cfdec28e5f9a961c41a8878970d6e51ae9208ce7c4a3db155a7": 1
+      }
+    },
+    "detections/tests/indicators/check.py": {
+      "mode": "exact-lines",
+      "reason": "탐지 규칙·지표·이력 fixture와 공유하는 원본 가드 식별자. 본문만 한국어로 번역함.",
+      "sha256_counts": {
+        "66b16a24e644d7b82ba73c5b91507cbef7ee84dac9f274c9d972fa40e255a79a": 1
+      }
+    },
+    "detections/tests/misp/check.py": {
+      "mode": "exact-lines",
+      "reason": "탐지 규칙·지표·이력 fixture와 공유하는 원본 가드 식별자. 본문만 한국어로 번역함.",
+      "sha256_counts": {
+        "cda124b28d63244378af652c2178a278e40cc86f0e5fff24b362b14b5f185114": 1
+      }
+    },
+    "detections/tests/sigma/check.sh": {
+      "mode": "exact-lines",
+      "reason": "탐지 규칙·지표·이력 fixture와 공유하는 원본 가드 식별자. 본문만 한국어로 번역함.",
+      "sha256_counts": {
+        "7f3fff95f2c2abbcf3c07ce1cc7f8795b4e2d7b6df84eafda27e3c17387aff89": 1
+      }
+    },
+    "detections/tests/sigma_match/events/artex_guard_audit_framing.json": {
+      "mode": "exact-lines",
+      "reason": "탐지 규칙·지표·이력 fixture와 공유하는 원본 가드 식별자. 본문만 한국어로 번역함.",
+      "sha256_counts": {
+        "5c2ae843a31ee703ba4b9b51aefaf62c3b8060f2b5c3f46d4d7115fb15116a00": 1
+      }
+    },
+    "detections/tests/sigma_match/events/correlation/artex_guard_block_burst.json": {
+      "mode": "exact-lines",
+      "reason": "탐지 규칙·지표·이력 fixture와 공유하는 원본 가드 식별자. 본문만 한국어로 번역함.",
+      "sha256_counts": {
+        "c10a858ad14a5ce83530d6828f4491b7ccdc7d1e11c1c2d149353132f26762b1": 19
+      }
+    },
+    "detections/tests/sigma_match/events/correlation/artex_guard_marker_then_destructive.json": {
+      "mode": "exact-lines",
+      "reason": "탐지 규칙·지표·이력 fixture와 공유하는 원본 가드 식별자. 본문만 한국어로 번역함.",
+      "sha256_counts": {
+        "c10a858ad14a5ce83530d6828f4491b7ccdc7d1e11c1c2d149353132f26762b1": 5
+      }
+    },
+    "detections/triage/artex_host_triage.py": {
+      "mode": "exact-lines",
+      "reason": "탐지 규칙·지표·이력 fixture와 공유하는 원본 가드 식별자. 본문만 한국어로 번역함.",
+      "sha256_counts": {
+        "66b16a24e644d7b82ba73c5b91507cbef7ee84dac9f274c9d972fa40e255a79a": 1
+      }
+    },
+    "docs/defense-en.md": {
+      "mode": "exact-lines",
+      "reason": "탐지 규칙·지표·이력 fixture와 공유하는 원본 가드 식별자. 본문만 한국어로 번역함.",
+      "sha256_counts": {
+        "342897188ea8fda36f2fb28c8b1cbe00cf4d53834e022c644ddf829af267f26c": 1,
+        "c92943503fedcabf2f5f05614792ac44b246fb0aefee55f9d31d37737d90505c": 1
+      }
+    },
+    "docs/defense-ko.md": {
+      "mode": "exact-lines",
+      "reason": "탐지 규칙·지표·이력 fixture와 공유하는 원본 가드 식별자. 본문만 한국어로 번역함.",
+      "sha256_counts": {
+        "0e8e1cc2618b4838dc1ec9034c239d16e48387792bf911efa83c352165dfbfc8": 1,
+        "ca1965d909bdf7171c3b4db0d27f895fccdf73d558d2627511c2525738c41adb": 1
+      }
+    },
+    "docs/finding-traffic-evidence-zh.md": {
+      "mode": "localized-resource",
+      "reason": "지원 언어 리소스 또는 상류 원문 문서. 한국어 소스로 대체하지 않음."
+    },
+    "enrich/enrich.go": {
+      "mode": "exact-lines",
+      "reason": "상류 설계 문서의 기존 파일명·경로 참조. 링크 식별자를 번역하지 않음.",
+      "sha256_counts": {
+        "6460a52566cf0eea40d4d47e4e1a4ee88e5d671239953ddff8dcde4f08bf817b": 1
+      }
+    },
+    "guard/guard.go": {
+      "mode": "exact-lines",
+      "reason": "탐지 규칙·지표·이력 fixture와 공유하는 원본 가드 식별자. 본문만 한국어로 번역함.",
+      "sha256_counts": {
+        "067fda7d4e62bf02b9d70ef84d5c27348e59e3f573d5d1470cd2e75f49b580ac": 1,
+        "441276c998858844b1b3f799486414ffccf85e7a53cc9fc7acde4267ee97eca4": 1
+      }
+    },
+    "guard/guard_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "2fa055ae494a085addc6e15ef0707df1adfcfa76d4232ee9d0fcbd9cfd3e99e1": 1
+      }
+    },
+    "intercept/intercept.go": {
+      "mode": "exact-lines",
+      "reason": "기존 저장 형식, 멘션 프로토콜, 승인 출처, 마이그레이션 비교 또는 과거 판정·로그 해석에 필요한 고정 문자열.",
+      "sha256_counts": {
+        "0d1d3c42d4ae4a242b68b75033f671db95557218d3ea4a554a0e76aa992417ec": 1,
+        "2ac1c759fa4744fa9e124bc4dc54d60b9054d22bbff0b995d83da16ed6e6f7d8": 1,
+        "633623f2815c026e599c15dc1ccf5a24996bab4818362cde52fb6d2a5f606dbf": 1,
+        "f95f3a2404a097c2f75ffe03a1cad3b253ae89c1f3db3efa643b6778cff6c8a7": 1
+      }
+    },
+    "intercept/label_i18n.go": {
+      "mode": "exact-lines",
+      "reason": "지원하는 중국어·일본어 로캘의 실제 값 또는 언어 선택 이름. 한국어 기본 설명과 구분함.",
+      "sha256_counts": {
+        "10a3781916a128ea6a5ec8c8267a9f5848249e58103a86e20acf65087aa5a682": 1,
+        "740724e15915a1f0e60ece4d5fecc07678941b3a415d0a000903b3c319d45e40": 1,
+        "ddc71b93e28843e2d3dec7e43b069c581acc2f7064ee4506611a6747bc983b11": 1
+      }
+    },
+    "intercept/prompt.go": {
+      "mode": "exact-lines",
+      "reason": "기존 저장 형식, 멘션 프로토콜, 승인 출처, 마이그레이션 비교 또는 과거 판정·로그 해석에 필요한 고정 문자열.",
+      "sha256_counts": {
+        "1526a24938faae64968e82982416260234cb453de3a7b9aff5bd7778fb479e12": 1
+      }
+    },
+    "intercept/prompt_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "00bfe04359f7a06dbada66d2d8bc535f0c7f641167a447ff2a5736ffe5873f93": 1,
+        "0568a77fcac23ae7570e5fe47e956dac99e5280833973263edbab2dc8e66e33c": 1,
+        "0afbbfc034c27cf2aa83659cb450cd23ed1cb793c7ed5c33dc666a0682a24692": 1,
+        "0b01e8cf7f6a90e9f1bae1f1963d9a51c5ab92a38ad23c28ef1ac519c83e23e5": 1,
+        "1d8ea8d2773803abed207728dd63223db1da73a346830c1dfafacd8cc69bbb70": 1,
+        "2f64e43e0fb1803242a976a904fd131d3429a19fd24b6bec6dad350e02c800ca": 1,
+        "43ec8af536936eaefc7bb1a7fedf0b0c43d9bee461ef303f734aa40ec207d72c": 1,
+        "56e23e2e0f75801a03af0a1db6076f9d4c45ceecdc7417408d834d01bd4f404a": 1,
+        "813ebd5243895ee41279bde84a44f8404ee4592bbc7f8aed1ba06c0856c808ca": 1,
+        "a9f6aeb53fa0bc184966250decdaee32de02d75828833306f2e97ce7cdeeac26": 1,
+        "bcf03406700da5dd6b54f8d955b401751e85416c3a5bd323d54a2c49065c9589": 1,
+        "c335d927bfab72c5fb0b94700cd372f24b79f0f33fcf49580dec8839b5cd07f2": 1,
+        "c833b9308b5296bc77223b23ab444325935ebafdf371f8b201446fa3153b0fcf": 1,
+        "cd92d64620c75b2e80c9a6080c782f3a9d35467fcc489742bc0b30ab4ae5d55c": 1,
+        "ece18e7dd47c7dd883b5632f0e15610e1b830c96e29716059269eb80b0094ee6": 1
+      }
+    },
+    "intercept/review_context_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "1ffc4f6f912239c818a81a9ef2aaa492382b301f92345971fc8cc3e7a1ebe908": 1,
+        "2e1ce3d9ed6814be07126d01dbb0798835f23f361ac494856c816ac34fff68b1": 1,
+        "4205d5cf10b72d2dd0e40d731a5ee580176cbc361d29683749d46f800a6eb75b": 1,
+        "44d392d47876871d0c85cc0027b9e84f1e970bf45fd6f6080317f0d3ba576d2a": 1,
+        "5826d0ffd317bdfeeb6651f31966d2ad77e32328129c00a889ad09ffa5a9d79f": 1,
+        "67777c8762f4cea473e9e922fe6708b9351e9781e9b3c3a4d188139d128a1a93": 1,
+        "72b8f7ebe8f2132c63e348cea57757d381410dcecd59f3b36a0cf1a369b79cd7": 1,
+        "8f053ac7dc3e4f5be05f769ae672483be16a59dbec09b2aa7cf1076aff933b3c": 1,
+        "975c556109f46c2ed6335ac6c370f8720120fd69c35c8445db676328487b5740": 1,
+        "b4ea2a75ccd12628f24c03082c8d21fcfa2e405d5b02f61999a62b9b01794494": 1,
+        "be77d44b3509619716f3e843e37e2615329c914d14429abb3fdb142f0861a478": 1,
+        "ecf53fb019396bb6cefa889001fe563d1027288a9130a3d6cae8759187bfae33": 1,
+        "fc531104c52f1187462cd1df1af12ee27c89c8a808e1b91c8cb49f00ad9dbe98": 1,
+        "fdbce910968a0503f4ef9fc3bc0cf6d48d3c32cb894dd4b8e459f98a7867e31b": 1
+      }
+    },
+    "intercept/trace_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "83a9711ada289ba14f3ecde86308d37aa6a0634d9d224d021ed4b61b83af5569": 1,
+        "a26a94a80775b1251cc45adbf1f6f8cf6ddb85c2b319f56832ca4b2efc2ea95f": 1
+      }
+    },
+    "notify/channels_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "053a1f60f427b7b49cb2d6736ab00b187dd82af254e1dd42cb221133a503ceef": 1,
+        "1ad4d262e4a546d9a8bc52893dc2cc8f30cc8d3a2a927ed8e27cd4cf2971f9ad": 1,
+        "1ec11a1e427171d9101f5ff26ff09320b66e8d1062f6d2194793b38a4b9e1934": 1,
+        "23f859f55d2952371a03fee961023d73990969b4f35ed45d751234859e28f2d7": 1,
+        "466c89adc86fd87c799e552d3122333bb67061878e4ec3dc70d0decb5cd8cc2d": 1,
+        "86e3096b86aa6bb8b2f47945c3dc0af24eac97bdc02f5ad818b1afbe701fac08": 1,
+        "983d381db773f7e725c22120d7bc927087dbb5a540211fbabc3bd5c147d153be": 1,
+        "ab5fda84fd1f1c081dd4496653f64099375a3473397a87ca2d73a7841f946731": 1,
+        "d578571d1540edd3f357fba534d4adef18bf0381ffb4848fb518e1b5d1596d67": 1,
+        "ea17a9274708d17498356e747d64ca979cb73377b679bbcaa04ac6101918ce1b": 1,
+        "ec3db2dd2d3bf2b903c6832806256350b9a3a55f4b17d9d334bf1b2b39c0a112": 1,
+        "f66f2d9e90f95a717731ed642d421f91d9857526416b286e1794f2a50b86505a": 1
+      }
+    },
+    "notify/email_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "93fc96af40fdba2d2bf8afcdcae7075fb1f509e115977965c372f197e2b4a347": 1
+      }
+    },
+    "notify/filter_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "03458fa787ea384a18ed2d10d78d895750dca0b1149ecd4119075ce6f513012f": 1,
+        "0779f56116e3925970af15f5d92aa5076d9ba301eea8567a1ac6f0b6711f1c76": 1,
+        "0bfbfc9d12526b1db32e0776a3b9298962bf4d85b51bcfda94b6d9cb207b022f": 1,
+        "0ffd5f69e4c7412a863674e240b8ec65157623dd2762784cb241cbc2d794dd44": 1,
+        "1bd8f17de7725482e150f33306b3a86a3034f99111f3c0f28996ac28733b6ba3": 1,
+        "52ffe305fb6553cece2f0971265aa2ada3dd1cb74027ecd6d3216752b8ffc1e4": 1,
+        "86521daaece2d5d83e3280870b64065fec442118747ff7fde8261c941eb0e85e": 1,
+        "cf8bf6968fcd6be97232c89a0cfaab68ba5e4b068c401ae08eb666054786b1b9": 1,
+        "e418b22b5f821963a6d796e5ba7a2df50ca9eec73ad5370d6ecd021ec7a9b990": 1,
+        "ed089d39fded51e64c98e4556289f6e8692aed781f159b071d8a297d47944eaa": 1,
+        "ee575355513a7c5b948d4582295fbb10b9a746a85cc7211ece01a1856d1d4c17": 1
+      }
+    },
+    "notify/notify.go": {
+      "mode": "exact-lines",
+      "reason": "지원하는 중국어·일본어 로캘의 실제 값 또는 언어 선택 이름. 한국어 기본 설명과 구분함.",
+      "sha256_counts": {
+        "723b5b90213ac88eeba10d5db87da638b0cb01614c0cb8504400a865306e3658": 1,
+        "9ff5df9ad9759cb569fca69e671e907c33194409140ffbb22d17cfaaf9a145f8": 1,
+        "c09390830b06a333e19b41e7d305ea6b67587de4d10c3c9ec4735d825bca548f": 1,
+        "cfc20905d83dd3f0ef78d98b0ef5c5a1c3e47a624cf95db7b7068b34f80b47d6": 1
+      }
+    },
+    "notify/pack_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "1482ac8ea23d730d3ff56e8d773030ffa4dcc1637f8db3bdc5c90b01f19869c5": 1,
+        "480509de598ed542eee4c552a1770c8a1b47e6ff1536edb64a6b0c7d24a6186f": 1,
+        "4e7cc0fe8cd773a9d30a02fde70a3cf715c1fe53631ee85a97784d11626b8bfd": 1,
+        "554e3b15fbdd22fec71546c5c1d676ebe0a8ac6fa937313d1b75f6a421f41e85": 1,
+        "7585a7c0a13f49dbe42a5b28e62e7a1e8c8dabb8941066025098c9a4e8bf040d": 1,
+        "85821c0f3d08d625209029730cdfe63600305e3387415dcf4acc565abd31177f": 1,
+        "8deb3c5ebf51229849bba9df7d65435bc6c88b36f07c7d169f37877e6000a797": 1,
+        "9a6a3c0715c7d2f2a242640a43c09ac0cd9f75f0938065bfc0e5b68d69cd5ef0": 1,
+        "9e294da40a86bc4736a68f01232063fd98cbbd2ff4ffc7aaf0852a9d2f918d69": 1,
+        "ce0f82f6e99d3d3b6ef6e842ecfa6f1325d773bab6fba50aa1dbdcf80edd71a1": 1,
+        "d42617b5602cd01ee72fe52212abc4f9685324017f0c476dd147b6d92f431352": 1,
+        "dbe937db109115c5f1a4cdd1ecf9fb32a738712681e2d518b83ff29ea1fff375": 1,
+        "ef3aab1b0aacc2f0f43e3f9393e442f2017464dbc5cb436bdc10f2655a239aeb": 1,
+        "ffce064ae5c40bbe4001c7c03e2bc96e09bb71c36d4d1fc441e2e86449c56de5": 1
+      }
+    },
+    "notify/render_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "8fb6d11f28ca9bc77c7f12ef082d57260e36f75126314995578fffa195ebe9ce": 1,
+        "98fb3655f8a60069f4c5274b5db8921997548c1c497012b67d989e251f4d6928": 1,
+        "9af60a77be507c5d412fde3833025f6ecf0b2a785ab17c1895bd7967b673bfb7": 1,
+        "9ea9014e042f75c67c3df96993724cfda96fe53949473ed297914168fb2bc9a1": 1,
+        "ac3d11b9622e8c47348facfb70a343208d5a18c8b9458db973ea7f0f41576597": 1,
+        "badae9349c7a53564fd640627b2962f76971f2373a5f8a24d61c28ba7fa408a3": 1,
+        "d4190ae9a5471b2b7babd7bb57a2243fa2e3c32ed284c79a3b78de82c3d13374": 1,
+        "f33d0e7384418979a0d780a4739450530f9f70f722910c75b9ca84c76147bede": 1
+      }
+    },
+    "notify/webhook_template_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "eacfca5810aa69f654442d229c53d8f701a93d861a2563fbd53725d1143311f5": 1
+      }
+    },
+    "scripts/check-web-cjk.py": {
+      "mode": "exact-lines",
+      "reason": "한자 탐지·추출 도구의 범위 표현과 실제 중국어 예시. 설명은 한국어.",
+      "sha256_counts": {
+        "1621645981cd8ce1dd8127615ea697dcda733b16ae84770535ae82080c8e5023": 1,
+        "61f426e33c37dd9d4d77ace175f3f4db3793d11bfb17855c7e69ebc3b55f74ca": 1,
+        "692777f7b3a91c0fda0382659cbeb46af36f27c6f8092d9bf075b53a557d4636": 1,
+        "6de0d04466da6e78a9eb0bde1533889ff99ace258246058a47527aaa84b1e697": 1,
+        "6f55c0b83f1a6a5f91a8d9670ea4c0b0343b4a063580fa822b0d664abb47ccd3": 1,
+        "7594ce30427ba5773ddbd985d4928c26f4feecf49cc14862c4ed5fc7f6458df2": 1,
+        "db5d9fe7ccc7f07d4403beac709e2fed042ec782b98d20f20cc82c78f4318d0f": 1,
+        "e5b2f32cc2f69e2a26985eb26b3ba856c42d949d3c03eaadcee6c762bf6a5572": 1
+      }
+    },
+    "server/assets_scope_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "069147af928dcd85fbbcb3814506d7d49f3343658ddfd6ca87f6db8782b26baa": 1,
+        "6b47c88107feaac15f9f96020f91824742493e2299c720a04aca591f98b7b6bb": 1
+      }
+    },
+    "server/chat_mentions.go": {
+      "mode": "exact-lines",
+      "reason": "기존 저장 형식, 멘션 프로토콜, 승인 출처, 마이그레이션 비교 또는 과거 판정·로그 해석에 필요한 고정 문자열.",
+      "sha256_counts": {
+        "3f1615037a1dbe8e1626899d84804d4fbffe7206e926b84e8a0bbac35c851501": 1,
+        "410f63dbbdc8013caad9682230c65e570b5abddf380bb8902f6bf90d63eb761f": 1,
+        "69a05fdd29dd8fd729699e19fe1819bd8abfaa26408bff21a87f4ca0824294ed": 1
+      }
+    },
+    "server/chat_mentions_localized_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "1b7d989a021eb06aebcccdd10efad815e7b63edde41692d5a7addd661ba8716b": 1,
+        "22265392f6865446c4d19726cd9b1dc774c537a3686a63da3a4a269f9f71b79e": 1,
+        "58698099cc1cc1c8619284edd01467deb72939b05500a3051359868408ef8092": 1,
+        "ec1644968a0fd55800d73ef0ca12793df6fed299f1579787b99e0b6d1f7c418d": 1
+      }
+    },
+    "server/chat_mentions_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "18a9b3815bb2eb976829a5a02f33646908291d5c4569f178a56fb79aa774cc6c": 1,
+        "1ea76517df440c0e9ca8ff4f5253289a4647303353b4d74304cf92af063c2dc0": 1,
+        "1f4b7bcb2e8179c4e915a42abb26afae96cbe5f4a6faf6d334d7ca95d076f6fa": 1,
+        "2725a24a20ffd85044aafeba23d8b91c4b9f53cd71237ba2038bd6bfcd353106": 1,
+        "4b4ed0434b1bc313fe4d41fda404ff0fe9960119342b274cc4284b56a31c5fc9": 1,
+        "4f3d379bfeb035b23e8d9011cd726c24dea858d2a25362807abb14e19931c0d2": 1,
+        "65fea9f64c321a319c2d7c34235094400f08842082a488611d02a748757bec7c": 1,
+        "72f7e16006affe9a50834e950e15728e4e1a5bf977bd64813190fc7264c51a48": 1,
+        "734557c3f40ed9cebe23bbc9efa9889bb885bfcc24c1b5ab116f0a9a36fe5e92": 1,
+        "78aa6a048cd990c0837d89f32d5ffaf27abfb8a6f0a47104e2b8b65ad8fcff52": 1,
+        "7adddd03e3b592fc12b6a60c8b6701b66987ac77ef258bb46bf3482c8c426b69": 1,
+        "8d01677ad249c8eeb92017ca8b24c15106e3590d91360cf6961a03cb6c32fb04": 1,
+        "8d7837d9dbf2fa74c06166fecf75cf356d0d997b27c70379c38a6b388c03ade3": 1,
+        "9564be70667de65f9a81cc2d6b7fef1296d57ad718026145019e215fcbfd1d68": 1,
+        "9db25f9b1a6a1de7ecca235750f003d9d27a16bcd90e3cdf2c4dc764ad562423": 1,
+        "a0f0a05c869e803c7fb3e600016cc2d64a54fcf3d280119b8e1bc43f5e1cfb2e": 1,
+        "aa9cd266572d80006046156395253399faf5051491c5e79c7cd3796da7064f0d": 2,
+        "ab426b26a2b94d3ec2f2d7e78b9c1a31993c4b58a093ea383ab5bacf82cd26c2": 1,
+        "ba012965b2f58bca53facba924baa60e34a9a8ccaf2ffa7980eb22c1ef721cc9": 1,
+        "dfbacd0a95db10d533e93ead7cb281adba981e922b9fbb28f8dff669b2875822": 1,
+        "edeaad7430d31dac5db161da629212c3aa96cd1c2902f840e3245424863df63f": 1,
+        "fce01ab6411a8a342482ea6c21beae2c884a621c94689ad2934a119266e7c4aa": 1
+      }
+    },
+    "server/errmsg_catalog.go": {
+      "mode": "exact-lines",
+      "reason": "지원하는 중국어·일본어 로캘의 실제 값 또는 언어 선택 이름. 한국어 기본 설명과 구분함.",
+      "sha256_counts": {
+        "0002bc0ecfee523977c1c088e84fcc2f07b07714ee6f721478c5a451430aa739": 1,
+        "0018820ab7eefdf9e9609f82cc8fc49279dd4848b802071ea2852ced2ec30630": 1,
+        "00a3eaf0c4ec396f122773428e658d45669b6db16d7cd54e6122f21d7d50a088": 1,
+        "00ae373b2a1ce0bcd4a213a43ab05deb6bc0b4bd0480793a550fd96b591ba5d1": 1,
+        "013b4fa2eb5d2efaca9d338f03df20bcf6435140b4fbb92d3f76787682616455": 1,
+        "04136ac18fba2ac349fad5662b9242b0f52dfcd06e321b5da05fedabd76d9939": 1,
+        "0771d5bff9c94d81e3ed31dd2b10c2a165b07c72f553ec8ecaddf0d497e59b25": 1,
+        "090ad051eb593adc839877110a48c63cdfec4bb6d6971d9f80a008be8cabe7bb": 1,
+        "0a35f4838114a22733222b6cb5b4470d5d8240751f514efe96f918139d1a82fe": 1,
+        "0b59a08aa66aa6489888813c3b29f66103f9e3f4e6022c9e1fa8af843271139f": 1,
+        "0d283237a6b24e0fd9fe605937ec27edb56630962b70840ba41f4baef5bf4f01": 1,
+        "0e44e6d481327d52879b68098540acf773d48e0b96261e3eeff58f30372b1625": 1,
+        "0e6a4926a734810e63115407351307d1b2c650e0fa0ab811c22f7242ec30ef38": 1,
+        "195c5093ea50874d1aea61328fa5301269cd688601a8557d8535800f1ec17cd3": 1,
+        "19c10ebd82fc6ac05497e6511766c47acd3e9b6f87a36bc8ebd485c2cd42f48b": 1,
+        "1bff57a4a021240a62807ba42cc8c180e28aea197574ee81ce6bdec12f5eb7ff": 1,
+        "1d3aa8f70cb45b4e36988ba093041d56c3044c144077721f78dcda6eb4b5c3c7": 1,
+        "1f5da6e0ece6701da28fd115aa32b883de6b7114c522365e499e71c4672f7c4e": 1,
+        "2076c5f3606f211fc81a6482d3875f87aefa49d07be1b201d86f6bacc86e85b4": 1,
+        "20ea1415606a92b361f4d37cf223a033a42d09f8fbf0707b9b52083fdbb5feac": 1,
+        "21c522441c38730c1be3a985249775f9c7cacbe3a23693e893c80532ce57520c": 1,
+        "2286f6bf6e7086c2758195b569b3c476aad749da3b8c0adfd754c6f0920c4ac2": 1,
+        "22c7021979c027c8693f47919430f79cfd4794f1ad7e134ad57290f939a386b7": 1,
+        "22e05ad86d586be817e4775c798aa6754e4001ef444e662676ab49a9c06ec729": 1,
+        "23237ae975770770e671b2900fcb3e43365b47c5c3ee7344ef5939f042973c5c": 1,
+        "2522dca8b71ee7b1d782bc8c19c0e2aef1a60a6c2eb25568d7ebefeabae58b0d": 1,
+        "26552f6e6b40df4b30eb2be2de0e0687519cc259ef9549ba1a55358c3737eecc": 1,
+        "271d4dd6a9629c19116a0d42ef2ef1e61b8e452ef2b027c3848813fe8be05093": 1,
+        "29c76a2fd01f82583a2833ad76f2248c2e0e618983fb76030d955a315abf7a96": 1,
+        "29c777f5b5c2b2135f5d6ad524f3c43fc4b66d1e71aa6fb14c67a59c7f80e037": 1,
+        "2a50c6376e0c87ccef9322c09374f9582656d338be4c85adeca5cde00c31a90b": 1,
+        "2b204996b94dd66a2f637e6881bd3620a077bbc9a407926e24cbe823d253a712": 1,
+        "2b476d5882d0246ef96ed403512476a6042e3a0899cc32b15b14ed41cc07693f": 1,
+        "2b9c854bbcdbcc4853e2836503722e99bb09d174a183e9cae2c84e8e7bc4cdc8": 1,
+        "2db50c87c8568fa6f95613c11e6d185889d44bc1a521a33c70ce18aebc9fcc0e": 1,
+        "34dac5d36f99be1505c52c7497869ca2292bd1f2eb56e027a7887c52a6a2c2c0": 1,
+        "34f2c96cb9a048ac10b556ee7c1b4a860d1eeaa86df10fd153d440fc7c0e2ddc": 1,
+        "35d31e6eddb67852a3bdcf0b9f296dd17a48e1cb4a90ca6430aff6b997573ea4": 1,
+        "36dca69b3e7f0eb08648fd687c596955f592feb46f0e097e53fed9e2f2851954": 1,
+        "37bb91c6c99f13fb64412910049f40ec7c0c7b5fff1f306a877413176002bed6": 1,
+        "3899d60c5fedcc084c17f662fc041471bc7ce545dfc426ed740b8ea3cdb39f66": 1,
+        "3a3ac58a29bf44dbb44fc9bf1e946679ce39f99e22a15bd74fc882d195ad14c4": 1,
+        "3a55b48b5d5245be6e5b5d1189d80d7216525663ef5e56ce11c33091d8eb89b7": 1,
+        "3b4da8672f73b342da03d9f362cb7b374bcd1aaa86660b9a4b94e0c7ba59c770": 1,
+        "3dde6c76893c90c305bb36512c89c8a934cbfdce90cb2b330c41979f0524fab3": 1,
+        "3e2f05d5c363e590f971c274ff942b01f703c87461ee779d449ee34cd6803988": 1,
+        "40f8867f46131703e65f1923db4c51e801ccdb502e5f64e681635eddb9264b16": 1,
+        "414bb657bbbfbf04337e73e38452c3ea1806081da8293455dbad34df1b0bccb4": 1,
+        "4235870706452a916bc3f48ffab07a5b00f8062eb411ae993f9ccc5f4e1c399f": 1,
+        "42e035b0a6c86936cc67ee2dddeb1d0421d4b965ac942b6c4e8ece4570880e4a": 1,
+        "4371656f057e7349268d6b26db0991d7b8da28fe9dec8c64db6d9f8d678d0a5f": 1,
+        "485f281bd535cef2ff218c979a2be53665de13d18b5bc2a3b596a694f426cd01": 1,
+        "48ce0a57b9b5d29952516a5aa7b952cd84167864eaf1c9ec9dc46e10229b2054": 1,
+        "49ca26ab2766fbec6bae56f5da010cb6e7b834dc2c55ec6b98d08d422997df91": 1,
+        "4a0122246b79b3579f59f70499a47fda914ea23fe679c41c8324ffbc8ab7500a": 1,
+        "4c39ed19f3c33f4c6024533bb7303c3c7a72098e812438ee9c003708cec94bfe": 1,
+        "4d597e736dfca055c947d88272d972f3be26d6846f2ae20676ec11790fcb6f00": 1,
+        "4e2339dc4dd0cbe7bf7e54f05907e90bd4f997dde7a96a94c415cced0f74ab07": 1,
+        "4eac23ddc13b55e115453477bf201d1c4fc12dfed786a4da878b809391204cba": 1,
+        "5015709eaa13906460aa1575631f5c19210959db32b94b619a8a0d3e84731ddb": 1,
+        "5168e52231cdc44200815d6de16fb5c950af7a91bbfe364dd4f8d8887b882bda": 1,
+        "55fa7ffdaf50c8d280cebf612b4e05dd9293d0f3478f1a5c532de4dff96d5b9a": 1,
+        "56c890c43d6b974e8977fe87bfdfc2b0369c222f397e77377cccd0e92873d331": 1,
+        "58d0e2d0a6d2735756206fb4bef42e9ed5df29a5ad5a2a11f5937d553370cf9a": 1,
+        "594642f49d08f3a429ea2eab949d80638c3b07a2f306bf2eb0e241bfa85d06ec": 1,
+        "59f0c160a5d53d10a4ead3aa2921c24007d9690e1a77641a1352de5b5b1320b8": 1,
+        "5ba505434ad246cca3756fc7fe9ea4a79daaef64a21971908eca2de7865a362f": 1,
+        "5c89f94c7651a911026bdb07ed85f9cf48e1c80e8a261b631ea50dda90a23f23": 1,
+        "5c9e93caf696e248a740b353b5043093e80435a36955848b34ad72f5b1c75957": 1,
+        "5ce773a98ce6dac2ec806e8d8f97e92b39243306ed494e6059bd0720d541cc9c": 1,
+        "5cfb0c5b638cce558d2e9ae4018c9eee990a210ced5b4cea2e8ab2a9472f5fb0": 1,
+        "5d77bf3d16dd13885261062f51d75fedd3eaed5c41ee384ca78973947055a685": 1,
+        "5e0ad25ca5c562b853d7732ccea5ef3190f1285701cb487707e4424b37d63ca3": 1,
+        "607cd45b289b73da8ead4c3eb022c4dd30079432a09c659c8b2dfc86db2e3f26": 1,
+        "60811aa158015a5f051749723976c2804912f8da88ec66985eda793563c35b82": 1,
+        "6373fe5f41eda523649d89a1e4ecc02f7c2e5dfa9b21f4dd2d78ac7da90c3eac": 1,
+        "646eed792248483d3b911e893ba1f68142f654dd37ef7c5b632aeaaabbf3c964": 1,
+        "64a58c61e1e9811c9c04d11adc56d247e9b63e02e637e07a69e5b3630cebdc5c": 1,
+        "64da1248b7bf61fdc14392f64bb35957c6ace395db4ed6bbc32e7f2f72ad570e": 1,
+        "6560709e8de7a4694f8f87207fb69ea6bd07473a063b7fec5eb3da71a534fa96": 1,
+        "66dc1ccb6a33cf152380be20ee87f16bcc9da3c1da0e7e70a9ac33878413b033": 1,
+        "676aa0b08663c171f71c150b6414e752cdfc101326685b4299347037a2e8eed3": 1,
+        "67ccbe895a0faf7b70002ed5bb33aa27c7f51c9eb36e299be980fa7432f83b7b": 1,
+        "684cff69aee387610901eae60eb56fdefbac5c955029301d0f59d61033ab9119": 1,
+        "6969edfb2ab3db6cc4fcdb4a12e6ed8e699b4ee496a58faeade08d49942938a2": 1,
+        "69b368c557674713e7cb43a0735127d5180ac7e9db3d9c62c09f6810f62a5f13": 1,
+        "6d4148f8961166916b688b82c781e5353c15695472ea80fb83f481cbaf28b4f7": 1,
+        "6dacbf04b45f6661fc8ae56a3521ed6d8a1a040c32b754b0ace1b1535868ce1a": 1,
+        "6db529c732ea82e62b100d0a33147c4c3fb7244c3843115d1dbfca254092a18e": 1,
+        "72c92fd158b0cf9c23514f6bd2aa68a464973ef18e1116cf3546829aff2deac9": 1,
+        "732a2dc34058c82127023390aaaa8266e8fe056858050aebd52d5239b42e1ec1": 1,
+        "73a63e132a7d203984a4726a27fc002110a79cb5cacdd68b10aeeaae3b4efe19": 1,
+        "73d05f4348a08682deadaa255f38c515934238b27ef56f548f62d28bf4839f33": 1,
+        "75e1d8cce0d3618cb1543a77ecf01613dd1843e9421ab5ff26210c56164508bb": 1,
+        "78158bc0a7c66d89fb49245eb33f5b35ad5cb4c4eea4ee8ac860c5b9ca7faade": 1,
+        "78378260ab1ab986f85bba1ee100b7f36016d5b5a8638b6825320e1ca7062f4c": 1,
+        "7a6d1f4af0dd3be3c8749256dfa2859ad8c394631ccf87d648e710c7d440452c": 1,
+        "7c0361850e6dfd4b3b6aa1b55071ab2462d55808bbc03af3fd57fcedab525c1a": 1,
+        "7c46f1554ccef0f7b739d7e4ef507a7871f523d15f5e59d40ea1dbf5c09fe615": 1,
+        "7d908f9f916f83fc19702bda309e7afec4af65ccb7fee8b4295b45e6a6f4759e": 1,
+        "7d979e325891fa6720a17f0f01cbb2a2fec540e6a092fd9049781bd6ec7305f6": 1,
+        "7e46c71f1335ebff1a4dee452a88c47fcb65741542590b728d52b51d1077c4d9": 1,
+        "80190cbdecac12e4d7b45c7400d8fe6cc5924c50985a23d36458c770c7de9701": 1,
+        "80e25ec101c1710296c718a6683aa6db62db7027fd99ef3628a7dbe1850ce24d": 1,
+        "81bce5170f61344c69461af8332923a2757388a12d2d06fffdcc7545e4d483eb": 1,
+        "838cd78c90db5b773177777072160125d7f30fe49972e60ff16ec5782e8c3961": 1,
+        "842ccc5b7a267300c14467255667b3e782b35326899be44f539b17fe30e1224f": 1,
+        "850956d1d417b4ced71fd391dbf518806356a1a6e45649390ffddacfec1915e9": 1,
+        "877fea3c8c1cd1e53be47f8ba4dcdef6516a817a764be517361c39852bbaf4f8": 1,
+        "885593aa7d55cac9067430ed7ecc75138a5b23ce9208e3d60f54c57c52cbf3f2": 1,
+        "89c08291e9fa9ff31955034f379aa3b3633c03bce2d1da94e7e4a107f73bf3f8": 1,
+        "8a2442807a6ec617f41fd2dd6645b166892546b273c12b8aa956124de98c80d0": 1,
+        "8ac690e18e9a07f6e8dd0ba279dadf49b70da558cf3a25b658e40ba0ff24ae31": 1,
+        "8b58fee354a1e46414c952d19e752763d805b1014061657b0407fbf62e3d6ffa": 1,
+        "8b5b3985d3cfb9532fdc21a2536a3d40d490b824a8d2bd99575e08f2960ed941": 1,
+        "8c3ebef57fb1ce0e542c4d7238b61d965383e250e6738e75c34713a16173f6ca": 1,
+        "8d5ca649122393f8f190e66ce4c03517fbd6d69d2a6beef8b826872078c05daf": 1,
+        "8e50b254c494dfbdf1bcc70f6f6fc637283d88a2667c28eb0497b9f5bc45551c": 1,
+        "8ee52368a38f41fe1de4c257d420566c27bf61ab333b044ef5e7d66bac063522": 1,
+        "909ac33353566d2ffc28ac397f2ede88946476a99ed8e3a9be5056dc3daa8d21": 1,
+        "9208fb02534c56ed56614bcac9700801b57d4982e31e8ce54c90d5fc1464599f": 1,
+        "92f24908d3dced5dcb329e89847b23c5b8adeb71d242135d0f27ddb0bd48ff80": 1,
+        "93c4b812f05de4147a96860cd87d937aca6e56a675666861623e39a3cf5c53e6": 1,
+        "941ee1a7f5f6b1947ce62d127b855fa1020ac13fc42dd2027c304086c2b8ec35": 1,
+        "98612ba4bd406fd37f93fe91a61433498c490d1eb416722e529ee6e21d1d246a": 1,
+        "9a920b0e56d5d67b005d6862f39cf4dbf863733a994f7518d3c39888f31322eb": 1,
+        "9c15cd437748cbed1588ff946e81afe58899e53976d32365095281693c1f7167": 1,
+        "9cb80a06ff8f8a4a28940ee757a9fcc8a5413403fa0af3238a8d2ec8de128b00": 1,
+        "9ded399b487b1bcfba082d7d9c380388e0dacf0ab8322025b250acced3b4af31": 1,
+        "9f6391d519044e037e1c2c2b1dd5e961fe8342b44c1920257552ee90d3c8b9bb": 1,
+        "9fe590fd560aae577a998d1fceb0e9d21ee012ac9628a8c6f71b2e36b55e918a": 1,
+        "a035489000188b8a54ffbe7b9425f00737dffb6946c6fa2b1652f83021064c58": 1,
+        "a10c261d9494faa4533184fc8075d41febb0339b26f06907d30787fb7ba4b84f": 1,
+        "a11091d948f6dac68d955b6cfadba047105cf06e6790013f1aab6f5494100f93": 1,
+        "a12d77b08d9948452b46f5dcf60fe60cac1f4b7ce81fac0500d408d0c5866dbb": 1,
+        "a334344855ba4ace4914b20dc7007da44d06b24bf8e84a865af9b810acf09f19": 1,
+        "a368682c8ebf54c633e8f5fd8f506aec1bae557373c8804c2fb287732672a026": 1,
+        "a6dd030eb0f0f60255fb16c911388f5a0eb3a1a95c477f97693a5673466afc8d": 1,
+        "a6ee53bbbafee13295f6be73bbd6b5dc6a44de36baaa2b73db1262922e591ff7": 1,
+        "a7825a4e3f77807392e3154b3fa7e0a8f8019521f50234df5534dccd1a8a23b6": 1,
+        "a8df7e692feee59cd747d93e37f3769131875af8f468a2ddde1b8c5ecc6fe15a": 1,
+        "a97603cff6d24b0d9c1294b2e0218026c3383986aa1e042cd8278feaf9114443": 1,
+        "a9b7949a6c323d26ae9c5fcc2cffe5a15f8edff9c584249a50bf026f71cfed88": 1,
+        "aa07e54409eef9ea9e3138f5c22dfc665f2b712fc5bceb708d6b049d2354abbe": 1,
+        "aa68a459611bf0f1aa69b4f5f76548ea0fe07273aba4a3f609670ae497bd60a3": 1,
+        "ab866b09444dc55531f2e4c91d5a1714b9e1657c2918b639e4f8c048dbea22ca": 1,
+        "ad2024c75c237dab19aceaa48ea6ddb549deaa6b112673cc4b306f5308661d6c": 1,
+        "ae6757d66693615df8d464afb5970bd55d9680d37fd195647c1d4636420df00b": 1,
+        "b48b0801c91e6025d6f7ef28d9f98de07574018d84e34f62dee6665506e964cb": 1,
+        "b4b98758b84003442b6e8471aead0118b998c923946ed1dd8b57d3322956098b": 1,
+        "b5c439f883a29791a55b7e73e287abd48fd31cddebb7a6b7a91b4330e0ff26c9": 1,
+        "b924c02defd4366b8e5ab3b57a797573f14fd8f54a5a5362e91dbe6c30b39e6d": 1,
+        "b927c04b526ea3b2ad25f9a1e39fc42aeb3703dbc58506d341a0f0172d0b5b5c": 1,
+        "b9b30e97c1d0a32da0412b6b9efa4393e2ec6647f90cc42adcfeb11e58aa9563": 1,
+        "bb1dd036a8502a4762591c8821ba71faf32e5f85c4440fc36aafaec9f7dc10d5": 1,
+        "bdb345c37dc4a1a377c7c81239b2a4dd9c696cef30aa6ac494a43a9b9c22a7fe": 1,
+        "bed5cff5cac7cb4e128fb9e63d3889bc255096aa21ee9944299ebaaa05a0ef2a": 1,
+        "c011d7dc300a29c1363e63d3059602f9455ab01a2f9e7c2c611a8c9d26fdb761": 1,
+        "c034dfe922da3a2753416f9642e6ba63c90e41c9206ca4f8edfc071aa66162a5": 1,
+        "c6ec6cd4d6c68a5444fc9f696a58aba175101af676bf7433aa7d239a5a74e99a": 1,
+        "c728a413e7097bf61a0a661f49ba580a0ac729e19fdaadfd20c46f4518002dff": 1,
+        "c9b5369a387ebf5ddeb5b2bf44f8f0e29876342c1fa612087e9d188e4c17640f": 1,
+        "c9bc88a433c21be64597275bb7cf5ba8a497d6c04585b8afcb54112d38bca440": 1,
+        "cc238faf0a6e91e0241705e92fe9ee6ec10bb30f54c1a5e97f5a624ab4cd3f61": 1,
+        "cd32ca3b86b6993bf1983a7a60afae45b66aba3386c9a3dd9d27786ee6161b1b": 1,
+        "ce58b335c1eb013226627aeba61abecde738417f82f652b3d9c4cd4f90661519": 1,
+        "ce76de9e358703bbee1e23af6059721d925935250af979f1ec4886a328cb942e": 1,
+        "cfdaf67a0c88e211b43298907084cfb3afcd03446a9350aa8f6bec619c1f68cf": 1,
+        "d05af1cf1120540514b1ae168965a57255f8d1a9ed2281182eedeac54ff9f6ec": 1,
+        "d1138e897e3755031925669b04a72087c8645a4c1088e35f76c8fc8b65cef764": 1,
+        "d1c17f5ead2ad3b7377b52bffc1826bbe2c29156121a7a1c58ac57b02245b171": 1,
+        "d488c611c5cb70c8c818febc7dc999fccebf12d786d0975c0fc54461c9e75b65": 1,
+        "d5aa5fb758b1b5d7f2300ac3ab1df367c60aa8d21de0b356b55b497a63eb3679": 1,
+        "d63036efd9d4b6fe7cd9b45a592ae231553831ed36d02184e0216512e9143462": 1,
+        "d82ef81b8a190e874036f76d0642c270a98d857c5bf8d8ec39fea6569beb53f4": 1,
+        "d957ecad73ab1d0e855a32043420a869acec76b6b66a2f560fa5fcc325dd7924": 1,
+        "d994c108d788083a28eb920f11e81734b822fee525c1962016a629a7eff80ccc": 1,
+        "dc31e5a5d486baa225dc1dbbd3fb1d7bc71704c364176fdedef756f130ad8a27": 1,
+        "dc5c6d2ea7a5bfbf965695784a3d9ad6eea06ec0ff3939d1f291d4b902ce270c": 1,
+        "dea1b33aea098156cab2a64b5c08cc823b452b5a97a8e01c3026d70fbeeda36a": 1,
+        "dea371d7d1ee9e34a3650359fb7b3f004839373cfc727be1ea74fe95cea07730": 1,
+        "e11e0eefe2804230a34734228e20e4763787e1b045eb01016e5184026d6ceb3a": 1,
+        "e2e9b78c81aec9687f51173a3cd8807bf2cadf0ee11bd2a4f6714f7eb2277070": 1,
+        "e51d14d3dc1854b7e20bc27848779393118fc26489afb7839aee17de8493098d": 1,
+        "e7891b2f6aec81cd35c8e8891ce1646c0327591438fe5d64d11c3fd3c0344d41": 1,
+        "e7cf2c53fc1f8474f76610c42c307fe759999e9b55c9cedeb1d8985c35a5ec63": 1,
+        "eae8cf581fc288d852c4825378293c5fad7e3f577edbc77f71c1aab2af63ea9b": 1,
+        "eb706841efeacf41c8d46e78b6edf89f479a804106b5fece8bed867140bda02b": 1,
+        "ebc4d31cd3e82c349d161c8c90bab35119f3e00c8e507848c4b12536ff4a2f5d": 1,
+        "ec5f6857ac26739977b7147ee68c5d1cefb64d9d194b9e04a0c97f170d3d293a": 1,
+        "ec91a0fe78a3323497eddc1e6bafb029c9344c26418578de4dc99fb98d569e68": 1,
+        "ecab76b19a8950c420e88942d6b011e4dc4310e702848b3f2d8c05e8d24afaf8": 1,
+        "ee0fb5b71fcfe96d1bc028ad4fbb148ef9d06efb970a0855cd0b6d9cef9bdf00": 1,
+        "f05538ee4bc8f812a214bec107d19a5e0c2acccf42d1f390bf62bfae5f9071f9": 1,
+        "f0a8d8a1997025b919d2a64f25d56f1de1d37d23d4fb284e5b9bd561f11e0520": 1,
+        "f5412c56a92d7b93e3149aefdd515e90e80472843215718e3283a8335b673bb3": 1,
+        "f697025d471193a4ed0e2802be08319d930146e020c7df8526b360179b95084d": 1,
+        "f6a684e9ee013dadbd972fae1aebcb1e85416b15bf8936afef1dc7239d1ba98d": 1,
+        "f7df406a4bc0e5466008c25395a13f1d860806c0a9641ae05481804ab54d7ae0": 1,
+        "f8348b5dee5ab1db9b6dc4551f25cad2d887a49f414530f5550394dad7e8049c": 1,
+        "f85523d9d709de52b85e672267c41f4f1a3dde6d8ca3465c9b33e3515f64dd6b": 1,
+        "f86913c53212008762b97f19387b18904362cf6ebd63ccf7217cee99ad3a194b": 1,
+        "f918b099077065762de2857b241e4ca957e400fa720de25480aee9588123ac3e": 1,
+        "fac70622401a2c7ca79e4274129336f3a7b50e4dc78d63ff965da55472574cc4": 1,
+        "fb99ceddd770adad9916b9092c5d292c796b19a8fdc1cb0e72918c7138e8220d": 1,
+        "fd61a335bd96409528a7d7e5bb182d536ebc510fd284db85b4d3a2e1c358f1fd": 1,
+        "fdb5fddf5d52f3f61cd1d07ba8b065ee90df005759d5f72ae96818c35d54987d": 1,
+        "feade3d6f5ff0ec5f01eb802e07a39e740f7b626b0342b1da9883fda5ea53d6e": 1,
+        "fefbee04d6d7bf7b6818f37e43e5c7d0f57a7fa9bca8ef5415f36fa77b8137e3": 1,
+        "ff6c632caca000602e0b1724a2a1f7a3dc322fed0c72a9b8d85f5ef320ace240": 1,
+        "ff9d3662dd469ba5c1242fbddb17a9eefd51001bc7ae0e66b6b3a8fb208af880": 1,
+        "ffe8edca1bbb20387807e249303eaf4af48aba9a8a50c305b513ac653b49116f": 1
+      }
+    },
+    "server/finding_retests_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "5f2dfc155c2ddde1d1c67c298a25013ba1a78e5849aba795a20c7f98e2917d22": 1
+      }
+    },
+    "server/finding_traffic_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "bf58d08213905113040c4973dc06883c3a42644969f85cca9073719b5a277571": 1,
+        "f13722802ca8b05bf8de440875dc31e3fa2ccea5e448aaa77ad2f6893b603605": 1
+      }
+    },
+    "server/finding_workflow.go": {
+      "mode": "exact-lines",
+      "reason": "기존 저장 형식, 멘션 프로토콜, 승인 출처, 마이그레이션 비교 또는 과거 판정·로그 해석에 필요한 고정 문자열.",
+      "sha256_counts": {
+        "b3a07e1e9c89d343a49ba9b59a995dd1e4acc0d5b894b6d028d91ff5db517422": 1
+      }
+    },
+    "server/intercept_detail_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "1256ca7242ae7a314182435632e35b314e6c7b7ffe67755f0dbaecdd46446f94": 1
+      }
+    },
+    "server/intercept_filter_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "6713392a0b03b85ded35bd47bb474bbdfe3aac89639e6a0b07e2d7abd5fdb0a0": 1,
+        "8c37b44421ff18050e8ed424db4a946305560c32c0398d34b9ef8f9be4bf8073": 1
+      }
+    },
+    "server/intercept_live_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "002038cab030617328cc730ec2a46b64c7b4ac1110b7f5d625042659c3c216ac": 1,
+        "09b805ce4744c168e3da8faea47a090f6cf9000c5dc6c63cb2b0065581892c90": 1,
+        "76dcd5df11ee079f2b793fbe09cdbb52809116eaf0310c287e545d8f839505f3": 1,
+        "810176be12790f34f9f0e6880be5aae4e78754bb546aa8fee99f0bc8139bd82b": 1,
+        "b5bf96f94f409d23eb8992cbb9559b47506b80c9d90958062dff419f6e5ed6d3": 1
+      }
+    },
+    "server/intercept_review_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "5264772312b5a1d7d94390272e8951694ff493fe0d0051f20915ddf30088a87a": 1,
+        "5e39b331bd96599bd12f61e45ac854f71011ef6faed4d668eefd9e543a220af4": 1,
+        "61dfa6e680d03a16dc155f01f97a5242446a83946206df2c5d48043e1aea0b43": 1
+      }
+    },
+    "server/logsink.go": {
+      "mode": "exact-lines",
+      "reason": "기존 저장 형식, 멘션 프로토콜, 승인 출처, 마이그레이션 비교 또는 과거 판정·로그 해석에 필요한 고정 문자열.",
+      "sha256_counts": {
+        "5f1a0b81496fc28b05ca7bd61efff84c5d4025913a3d9785ed33f9d0087edd52": 1,
+        "b24f55525d834b47c83bf407659bd896ea8a68679de23f3bf8a7eb0a5b223b17": 1
+      }
+    },
+    "server/logsink_localized_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "0f604d19cfd33c82ac7688d3500130cc633991e6ed6cf9cccdd2d9c199fe6349": 1,
+        "286a2d52da05e6aa3b3460b6f3080ef78996a7622e926b9e02cc3a8fe18680f4": 1,
+        "30807145e36c85dfb064d4314cb4e130831fc435e55a703d797f64f47c3760b9": 1,
+        "544cd781a1787a3040269ed8cdd79d3d0367c1a4a8b891a51c90c6858c9fdcc0": 1,
+        "683e5b2053a5d85a96e6f65ec4d26d24f802b4f86aa147f3256210600fab8f6f": 1,
+        "8a0123b68f819e2a693f853a844b42fd0ca30e11aa0aa9b9394e599a20160d37": 1,
+        "91f9743c2667966c3257f28b8dbd333db38355f4811d620cc5c6f279fa6fcbb8": 1,
+        "b277bb72cb90328251d38394fdb7cb732db52d1e671bc7be681e9c74021918fd": 1,
+        "cfebf1df61cf0884d46c08f3b0e273662951f7d9b87f328d59b5833a6e5df12f": 1,
+        "db5ff6f335275c9ba183307214a8f5585a7086099ce53ee9644150beb1456eaf": 1
+      }
+    },
+    "server/mgmt_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "06cc33c09a4932de4f1002635cb47059ca5c5d146c7801d5c029e51307515a2d": 1,
+        "33a493544f63e2f2d625bd5e9663dd113fa48dc97f18a1d64a416880fee78c01": 1
+      }
+    },
+    "server/notify_api_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "0096dc7bd7d1341c1a9c2b91c561aeb8f2060f82bd583d6edcc5822b2f14804d": 1,
+        "0c20eefe6ab5ae8e1002a383e79a9415cf40414f1aae56d0f24dbd0775a5df2b": 1,
+        "0d26e8b1b767ebbd1d4f929d779878e77bb6435985d941870c18508785baed90": 1,
+        "0ff3246cc75e3025d9200c9b87844a23357be1b5fd7909a907e0b1d8dec9417c": 1,
+        "2071a2bbfe153704d1e1eff0b0589612351eec1990bf208c3317407ca66931f1": 1,
+        "228e7255decdf140e02ed94cdd18247a2d80000d899dcf2b9d70ae94f4ef0eff": 1,
+        "229ce927f4e8277047e373d7dad8488915563ff74db3a180d107c4db4d96056f": 1,
+        "28fdb2c1a3b9568b3463c6f6fad2af7c89c180154cba1167bc265b67abcb0e10": 1,
+        "2cc234001bab2f38459b2e67af560c5b638b06c328e35d7ff8aa26d9014102ac": 1,
+        "37b54552e07665a0c1b0eef8d649066c10e9fe7b339e724fabd3541fb674f90c": 1,
+        "5750e08d2d8fb7e220e7b31eee15d136718eb443d0f7c84cc53f774d19a2074a": 1,
+        "61ae5ae737945c75d3e925eb4f3910505b56a279d5aafed7435022c202c16acb": 1,
+        "6379430684e602fb7e1ee116da23962e77cf626a09a4405242d27878bbb8275b": 1,
+        "6b40b9a42377f54e858ec10371e264d621fd351e917d22e07aef7ed8513e6d2c": 1,
+        "6cf8dae43a6bf1ebf873cce9a947b81bf1f7ad7245909a209734c110effafe25": 1,
+        "7149247aab74ba440f558794865d661146f17ade3a33accce9ae00501153286b": 1,
+        "73d5bd020641a680d2f897220788ad9b7c85f72e25b1d34c3dc5f415c2444d0a": 1,
+        "7c200d14729eeeb4b4c4266d9b5a4bc85313e1ef9400982b5729b6df1a2202c7": 1,
+        "8fddd8cce568a928b62e9018195345f5ecb6d83260f8ae6ab2c7e448b112363a": 1,
+        "a78bfc8786776dcdc6158e51808f8536c8e869fe71ed5957f268ac520a42084b": 1,
+        "b143000cd2b61e258033aaca00ffa5faa448e3cededa5e5dbb9f974c528685cf": 1,
+        "bd91c7b64644d09fdc1802844583b28d8e4e428f0f4c8f2dad14dd37b0b43ffd": 1,
+        "bf3c8ee24e21d2855947f880d3d841a22f7438c1c8f87066bccecfbaa9ea0e5b": 1,
+        "c5955d42b2b71e9a10e1fbba395a56866248e41dfa25680c6f442529ba0c5348": 1,
+        "ca582bc784eb1f1f16918cb861dabd8b0effe289739cc7be7e65690ce18c052a": 1,
+        "cb4a643d009d37aa0394203d6699145cddf6d5aef3fc6f59a2c9b15db02e54d0": 1,
+        "cbfb3e00f0b88b2d16bacae14de2215eb10e2fec0b3cc24f71b17febddb4d1e6": 1,
+        "d54ef62577c31276cd8a974f0776f10cde8f03506601aa413f27271a55fc7557": 1,
+        "ea137d508710f1e132ca06b2d135f48739adaad15c4b5d245257a50aa75b5618": 1,
+        "f00584a4564bec1461c49886f88fd491e52480b23ed8103c0d1b312433a3e1d6": 1,
+        "ff843ffa98e6ab304d0e849308a614b44461a539537dd00275f4c41c34fa471b": 1
+      }
+    },
+    "server/orchestration.go": {
+      "mode": "exact-lines",
+      "reason": "기존 저장 형식, 멘션 프로토콜, 승인 출처, 마이그레이션 비교 또는 과거 판정·로그 해석에 필요한 고정 문자열.",
+      "sha256_counts": {
+        "636cc78eaf0c93744e64c41cc26d3bb68ff04119e867089bfaa3bf0d58bef2bb": 1,
+        "b2dcc3ee5b5b30d8b2c0baaaf1d53663546be9efe19e29af135b3bfd4d011bec": 1,
+        "b64957e955b892bc7f3948a24e2f36838d1103cf17a990ec4d434b9305895572": 1
+      }
+    },
+    "server/server.go": {
+      "mode": "exact-lines",
+      "reason": "기존 저장 형식, 멘션 프로토콜, 승인 출처, 마이그레이션 비교 또는 과거 판정·로그 해석에 필요한 고정 문자열.",
+      "sha256_counts": {
+        "1bf72ce308cc15c6046e31be90f80b5e4813f1f518bb573458ff89e4cfc1eaf1": 1,
+        "2c8cc1a23e6916463006f398aeda30011a64e5adf35132043526f172c032b9cb": 1,
+        "76c8370dfd8d2d2e7783ff48176c3a7f2457ee6f3c44f8eb4ff0b36c4f15591a": 1,
+        "9ba13e0616ba105ddad49563612824e320986f837ffc338f78444dafd206045e": 1
+      }
+    },
+    "server/server_localized_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "a3538ad88e926aab05d502b2adc9b73296410ae1321b2cee324033ff6cbc501f": 1,
+        "adadbd62bc8221589a40e0a61071f5d749c8a19cefe0b9af697b9633709e4c2f": 1
+      }
+    },
+    "server/skill_upload_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "06af89bc94b7cfe28628b252b6ce18294a27a9a1d595f05c8179d3f6a021a91d": 1,
+        "0a082ce5d559568317f4afb3fcb2d71ce1065f9136f055e40ab72ed992db6f25": 1,
+        "0ea096ee8c535e1e5cbba6d6f9aeed3d8f20765f050b9c641cc7485bee9e5e97": 1,
+        "0efa54da1205640897f5ab29e039bb09a3f70c0c0b0391f5af22b7a71f34d322": 1,
+        "1ee67c20dd8dba2267fe609fc53bad6d8cde0d62c7db11c0c9e90524fcd2bcab": 1,
+        "2644573cadd63384cac9e0d96f75e51662432c2efaba5bb2f52dfeb6a85e5fa7": 1,
+        "282f9c592bf3580f9887a75437da2fc1fdbc49e5b70263ea5b71b48eb26d430b": 1,
+        "447e7f025e37f2b772202c89c05711c228696602a70cfbd1fedebf9fa7158db8": 1,
+        "675451035a4a84e3415e2ea210202fe1b76739c1eb2d020c73e2a1514053c5e6": 1,
+        "776b1643b49afc349cfc01bc820dbd4b98f6b849b36c1e7608063d56a45d8eb0": 1,
+        "7e413bf02d3701b851c04755045d93d3d2080b1a4ce1413e61b4b29b7ef5aba3": 1,
+        "7e62d79ed72bbaec0f3ddfcdb7d39892c385a0511e959d475073b3235147dd91": 1,
+        "7fea79632949b333aaa347f9c0d38ba8114e3277aa7dd71a9a9ac665e7a617bb": 1,
+        "83b2f7ae608882d68fb4b53d9f23ef676282a7a3f7cbd74cd57409f1b870eb03": 1,
+        "8878e0724698773e2029dc1db103f1003f53e9f3b6921f5c2723b8594cfeed36": 2,
+        "938c24b1dadcb67cd96b4a21dd9f6faecf17f85040e21c03ba1e3b1e99f0c986": 1,
+        "be883fe42754b92449d2aa9dd7d07ecda40184759b8d9d3342d10baa3e9f6176": 1,
+        "c6583b6d1c102442603cb098876b2fef010c7e854a71b90b2b44b11a9a6e8b78": 1,
+        "c8b9c5e819147b29c0a9c3d0145822fb8cadd8c2f804049cda4787ee9b0e5d49": 2,
+        "c92f336248ef3e90aaf841cd86188b5ed658cd2ed2aa687273f6c46a6b0d1c0b": 1,
+        "d1faf180f112d4b354abb601abf16294525a6ed2cc9a9ad9cc26a047bf78b262": 1,
+        "e5208ab08d7dd9b4d3077745b60dcca3584bfca803d30283e7ec3ff474df90c3": 1
+      }
+    },
+    "server/task_llm_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "76e8571bfbe5ef361393cdfd36c6759895bf345eded6abab79432f696c35abf6": 1
+      }
+    },
+    "server/task_metadata_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "74e866a2c997649eb8237a9c05d7854e55c9e84f5899b4b0404390aa4ed199d1": 1
+      }
+    },
+    "server/task_templates_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "69da0322eff90af5664255659423b58bc111ae55efa39dfaf5d97092131f9079": 1,
+        "7d31426d97427abe8e5c65f45011f09cf2e4b27a86bc45040bb9f252cf617334": 1,
+        "c1331acc6e875d741edca66c52e1e6ee0b9d1214248fc12c59a78b868d9cf757": 1
+      }
+    },
+    "server/trigger_merge_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "29534265c93047f5b3c1db967f4651a2955914222c3b24598e11211027aabb71": 1,
+        "51c91f328cd6b7b813de4db396925d47fb6b08e55a1576e8f7a00041d1fc0de9": 1,
+        "85b5708f751b5da6c2c3ec4adec36767ca3e6587b5aec87d37cd5972e9edbc36": 1,
+        "893a4d399e3770ce39f85efbbf27b0fc7e8bf9b551e18e2bc84070723abe7141": 1,
+        "a096cd402105599165c6cccac1a6bcc26a10fa4690ccb0fd169ba7bd4fd81863": 1,
+        "aa64ed772902184a19ab8f431790818533d550040c2922f0ba62ac1a327329dd": 1
+      }
+    },
+    "sidequestion/CONTEXT_BUDGET.md": {
+      "mode": "exact-lines",
+      "reason": "지원 언어의 자국어 이름, 보존 문서의 원래 앵커, 호환 식별자 또는 Unicode 검색 예시.",
+      "sha256_counts": {
+        "b2c653c52be201ba31d3b0f099dac241954ed0599fdf256fed15251af082234c": 1
+      }
+    },
+    "sidequestion/CONTEXT_BUDGET.zh.md": {
+      "mode": "localized-resource",
+      "reason": "지원 언어 리소스 또는 상류 원문 문서. 한국어 소스로 대체하지 않음."
+    },
+    "sidequestion/README.md": {
+      "mode": "exact-lines",
+      "reason": "지원 언어의 자국어 이름, 보존 문서의 원래 앵커, 호환 식별자 또는 Unicode 검색 예시.",
+      "sha256_counts": {
+        "ff515b8b1e45b8904abd33c4765b27a70f83a536bd7edc36a993258fa34ac62c": 1
+      }
+    },
+    "sidequestion/README.zh.md": {
+      "mode": "localized-resource",
+      "reason": "지원 언어 리소스 또는 상류 원문 문서. 한국어 소스로 대체하지 않음."
+    },
+    "sidequestion/VALIDATION.md": {
+      "mode": "exact-lines",
+      "reason": "과거 검증의 실제 원문 응답·증거 인용과 원본 언어 문서 링크. 이력을 번역해 재작성하지 않음.",
+      "sha256_counts": {
+        "44923792c3858f2e7a1663b3e8c8c2db9ebdff6b3844d47a3d9f98a3acd878d2": 1,
+        "c5d4dbab985178ecccfb8515771682cb51df60757f340da3b54e160d5cd6cb00": 1
+      }
+    },
+    "sidequestion/VALIDATION.zh.md": {
+      "mode": "localized-resource",
+      "reason": "지원 언어 리소스 또는 상류 원문 문서. 한국어 소스로 대체하지 않음."
+    },
+    "sidequestion/context_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "487545c044b2e93b78f7dd6a2f42f8e09dc6226df0fb051f611f2bed96bd45c6": 1,
+        "52e6c35eb1ef794676ff94783d592df8a3126ba3b1359954c68b8848ad9d7b25": 1,
+        "74b5ede9a88921d5ed5b7b43f38c52d39fdd43ae978134d62bf0ef4232e8993d": 1,
+        "89db6586d0090c58ed58ccc7466d63e0a61aa18c8edcf85c1f576742e09c5b47": 1
+      }
+    },
+    "sidequestion/validation-2026-09-10.json": {
+      "mode": "exact-lines",
+      "reason": "과거 검증의 실제 원문 응답·증거 인용과 원본 언어 문서 링크. 이력을 번역해 재작성하지 않음.",
+      "sha256_counts": {
+        "362db268df588212da7ba6ed7ec007d653c05ae51058426d1d4664374b7e55ba": 1,
+        "3a9aa0b8ad90da857ea1eb44e61e9b0f4c1e8a3d6bfe2642e217e5c6ae8b8fce": 1,
+        "3d4acd147a4a6996b36cd05f337f722a0a90373a404c65c5d13c03ce601ac212": 1,
+        "47eb8a972e129f64b848fe8bcb7926c7d785c3275e22ff5abf03351efe637fb1": 1,
+        "661000753bdbe21385b5e799eeca03d25389cb0c43b68bc56acd0a74d98a43d5": 1,
+        "6aa88909fba4d93643b88c86041466499bedd8a8d1c0b91b665654dfc6c7134a": 1,
+        "6d20a6b26fdf5a78337a4bd3399afb28db89109ba1d4839715cb8fe5810ba90d": 1,
+        "797041a20c24af0a2e69c248b12b1a20994d85c55a59b7bd9b495d1e9f480282": 1,
+        "83fb3fd83001a63ae15e05697eecd06395907f0f8766dcd18b5c9a02581cb64a": 1,
+        "8609bf166310fdfcbbbe0245381cff8da38d91104707cca4ef92ab62e8f7d18d": 1,
+        "bb50a04a13366fcaaf30ec019530490eb776910c5e56565dba5698616481c564": 1,
+        "d4d640a60eb5134a908cc7e3b5c403ac07afabbadd773aa8a1962a20973cd963": 1,
+        "f605e175c543de42294fd6a9a21c14927552b3f3ecba97bf966213d3072ad412": 1,
+        "fb394480a041c91b4b3336aedea6de6eba856069b75ff88ddcffe67dee697eaf": 1,
+        "fd8fc9da606bedcadce10d4f387cdf183f22fff172ba7b49f33dec49a0ddcbc3": 1
+      }
+    },
+    "skills/api-recon/reference.md": {
+      "mode": "exact-lines",
+      "reason": "중국어 대상 응답·공급자 오류·ICP를 식별하는 기존 정규식/매칭 문자열. 문서 경로 참조도 보존함.",
+      "sha256_counts": {
+        "885037a416f94ef7e5bda64da598b4af50aa4e2d13345eeeefafbd34f1948a4a": 1
+      }
+    },
+    "skills/api-recon/scripts/preload.js": {
+      "mode": "exact-lines",
+      "reason": "중국어 대상 응답·공급자 오류·ICP를 식별하는 기존 정규식/매칭 문자열. 문서 경로 참조도 보존함.",
+      "sha256_counts": {
+        "d6ab2edd27f8f1d888a68487a99ff3952777563cee24b4984f899aaf49a20445": 1
+      }
+    },
+    "traffic/reclaim_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "a86a6aedabdf244ccd840aa4d4083a936144caddcc717826f68b56ba94fa0c96": 1
+      }
+    },
+    "traffic/traffic_store_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "496300c06fdf9431320f3a44158a4f026c0d166a56f4d91442678ca07aaf49b9": 1,
+        "4d559d9f1ff5804733d36f67c53e0ab771b17d143c1406467c349cab2a2c05cc": 1,
+        "6cbe18874355df04baa88ecb29e6eb92ec1d4cae7e8378f724cd4cdfc7c730d2": 2,
+        "caf646206b6575cecec0c2df087eca840257739f6dbb5b4be456b823051f3bed": 1
+      }
+    },
+    "traffic/upgrade_test.go": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "b9851720b1d92d84736dbee47715edee11236ee719f746f15c79500ffe5c745a": 1,
+        "f39158567e5703f9d74e0c904f48aa6deb74b273c29c408355dcd4419c4ef850": 1
+      }
+    },
+    "web/messages/ja.json": {
+      "mode": "localized-resource",
+      "reason": "지원 언어 리소스 또는 상류 원문 문서. 한국어 소스로 대체하지 않음."
+    },
+    "web/messages/zh.json": {
+      "mode": "localized-resource",
+      "reason": "지원 언어 리소스 또는 상류 원문 문서. 한국어 소스로 대체하지 않음."
+    },
+    "web/src/components/approval-records.tsx": {
+      "mode": "exact-lines",
+      "reason": "기존 저장 형식, 멘션 프로토콜, 승인 출처, 마이그레이션 비교 또는 과거 판정·로그 해석에 필요한 고정 문자열.",
+      "sha256_counts": {
+        "06e9e8bdab9861624d428d51408c7bc40c28abd23b381673578822eec796c552": 1,
+        "603572d27dddc9bf1435c51c738cdf12fd0274d5581822a644c024529fe31448": 1,
+        "7d2aa7bb6f459a3f74c8b9d0b9155d73b32087e22f73a098c92347b4854b5c81": 1,
+        "8210dffe31cf679d7768db5989c880f32a30376f9fc5fef1f96020ff6a43f0e1": 1
+      }
+    },
+    "web/src/config/app-config.ts": {
+      "mode": "exact-lines",
+      "reason": "지원하는 중국어·일본어 로캘의 실제 값 또는 언어 선택 이름. 한국어 기본 설명과 구분함.",
+      "sha256_counts": {
+        "0dc4a5831ebfd18d6af519ad5257766d7401b1fbebe5d76f2e1298c1dc5bb4db": 1,
+        "4c662b2eb8b35e9e704ead9290683692e4fcb2e3f5a14727382efdb2a3db05e4": 1,
+        "a8bda93965f8386fc8107f60c08ddb0b198608e9522434f9c97f7d152c1b79ed": 1,
+        "f4163fafbe15104f5a4785022c61d735594b2a5035ac664767d40e8fa9c669e3": 1
+      }
+    },
+    "web/src/i18n/config.test.ts": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "f419f08d6553d28749ecb81b124d4ed066d859031c6278685455714646dfe3a7": 1
+      }
+    },
+    "web/src/i18n/config.ts": {
+      "mode": "exact-lines",
+      "reason": "지원하는 중국어·일본어 로캘의 실제 값 또는 언어 선택 이름. 한국어 기본 설명과 구분함.",
+      "sha256_counts": {
+        "200b5a2ad4ceea6391e41c29a5dc7f360b7fbd509faa0fe1c34b85fc3bc608eb": 1,
+        "f1ef74da3ffd874d7e6534ba1dc789a35a2ecf295adce0aec1ec3d2f9a11202b": 1
+      }
+    },
+    "web/src/lib/chat-mentions.test.mjs": {
+      "mode": "exact-lines",
+      "reason": "원문 입력 보존·다국어 호환·UTF-8·과거 형식 회귀 테스트의 입력과 대응 기대값. 검사 조건을 유지함.",
+      "sha256_counts": {
+        "2896038ee74144f2569a7d57e4bdc26c9bb1ef230c24f7f0284cc2d5dd64106e": 1,
+        "2b11b17cf7e5af79974397e8a7017a2fb5b1b38dd19064cdcc78f2e5ee1926ca": 1,
+        "2ea21539618571907a35ad2a93bcb9fee88a4b30d50802bcfe2bb3ca645ec572": 1,
+        "7354361f35b1e584e7dce57908a454785637869f4d4f2e6b6c58d32e733613aa": 1,
+        "7c2bc33ed6c31960f71d1c3490f93deea38f15f6b94b3ebb3eba704c9a737f29": 1,
+        "80cfa4ef0117a983ca34369e9ebbbdb18ff7b1f7c69d6a38018d3d7bd0712792": 1,
+        "8cf30018a72f2a4f64fa970ecf703253ca6fadc9d9a3b9c6598b5aa1be1a42fc": 1,
+        "ceac1e4fa229824e4bde2b0c7c1b9cac11634407ac34893489884bcc35b932de": 1,
+        "e7a03ca308ddbdabe9cdc1a66320cbb4ce70621c60911fbf277c7f41bf2a5f84": 1,
+        "f8629ed4f7791fe252a43c5b34938cb7952191a4987b6bd47c1c187669381af8": 1
+      }
+    },
+    "web/src/lib/chat-mentions.ts": {
+      "mode": "exact-lines",
+      "reason": "기존 저장 형식, 멘션 프로토콜, 승인 출처, 마이그레이션 비교 또는 과거 판정·로그 해석에 필요한 고정 문자열.",
+      "sha256_counts": {
+        "184569fb11ced6a17488dbb1932eecd6301a3fec0dfec9c6330b92d06804d845": 1,
+        "19e49ae671fcc9cca9860fb448f8f1342c7568b3f40f56392abbba4db966eac7": 1,
+        "3d153cd8d4b5d7ea2c61e323900eb7aca87561493c744939d41bbd78a895ce9a": 1,
+        "555643f712a7f338b05681b4850ce1937c5fd7e88e0816ab91931518a9c12e6d": 1,
+        "79766b7c7a4a9d158ce3faa0a6e99dd9102228252a278ed425661bd073de9ab7": 1,
+        "89a021f975c47e205e49c3e109cac194fccda21b57ac89dfda267d44b04f596a": 1,
+        "b89e4fd6fa0c7ea56e0bee879385b93de934c394df9f0a8cacebb6f1f108d865": 1,
+        "c679a521c2b7a86dcac9fb70b242f70462efaa8136c537b51eea5feee1f84b57": 1,
+        "e0a7c71be5bbd7cea222ed98fb62f394edfc35c93a53b0b6f2c2086c14d2a286": 1,
+        "e84b61f706ddacdc6f03544fe255afab5b74dbf6cc4f9bfb5092b200ac7f6bf2": 1,
+        "f188b6023f947ca83d0f0e1a251c0f7e71eaddb4773fc203ac1f18a34e84c1b9": 1
+      }
+    },
+    "web/src/lib/company-scope.ts": {
+      "mode": "exact-lines",
+      "reason": "중국어 대상 응답·공급자 오류·ICP를 식별하는 기존 정규식/매칭 문자열. 문서 경로 참조도 보존함.",
+      "sha256_counts": {
+        "65e87c35b8726854f6b5354a5f53cf7d0996c8c2292052dfefe4fbb9679f991e": 1
+      }
+    },
+    "web/src/lib/mock/data.ts": {
+      "mode": "exact-lines",
+      "reason": "기존 저장 형식, 멘션 프로토콜, 승인 출처, 마이그레이션 비교 또는 과거 판정·로그 해석에 필요한 고정 문자열.",
+      "sha256_counts": {
+        "5647275153666d1ba3fadef29472463e46bcae7dcce621a1d70260039a8f786e": 1,
+        "986421b8fe8d30dc655f99bf403d921add1ce5e17a6f8bc93c3d485726a256f4": 1,
+        "a2a067bfe55be4639f6f0652643cbf2345b84bb6845f39bf5a5de50c58bafa8a": 1,
+        "adcc999c3fecb6af15edb158ef4836017c79f7653f0ae97c90cad81888aa04ab": 1,
+        "eb964f6e45ae32da99a9817f72ccf9ed0e0d54e399cca2f5b752058ae97fc981": 1
+      }
+    },
+    "web/src/lib/mock/handler.ts": {
+      "mode": "exact-lines",
+      "reason": "기존 저장 형식, 멘션 프로토콜, 승인 출처, 마이그레이션 비교 또는 과거 판정·로그 해석에 필요한 고정 문자열.",
+      "sha256_counts": {
+        "8a141789ef0ed19d75226c50d24a460fa2db419632264b0bdf331fcca55705d5": 1
+      }
+    },
+    "web/src/scripts/extract-i18n.ts": {
+      "mode": "exact-lines",
+      "reason": "한자 탐지·추출 도구의 범위 표현과 실제 중국어 예시. 설명은 한국어.",
+      "sha256_counts": {
+        "6a8179b9371a239be1050c7eff1a351389ff0d75108fb6006590d0365697fc20": 1,
+        "8441c5bf8c7630ba2760e0a87fd1bb8ebd1b9ce494b90d5536bf5ad897eaca64": 1,
+        "ab5366820e924fa90c02eebd1cfc8d0f53b2ff9768e59d07185ff70cdf6dd835": 1
+      }
+    }
+  }
+}

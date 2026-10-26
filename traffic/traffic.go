@@ -131,7 +131,7 @@ const (
 // TrafficSearchDescription is persisted into the tool catalog for new and
 // upgraded installations. Keep it in the traffic package so the runtime tool
 // and the catalog migration cannot drift apart.
-const TrafficSearchDescription = "查询记录代理已抓取的目标流量（必须指定 host；支持裸主机、主机:端口或完整 URL，可再按 URL 子串或正文关键词过滤）。指定端口时只返回该服务的流量，避免同一 IP 的不同端口串包。body_contains 会在已抓取的请求/响应头与正文中做全文搜索，支持任意子串和中文（至少 3 个字符）。仅返回极轻量索引(id/method/url/status/resp_len)，不含响应内容；结果非空后必须用 traffic_get 逐条核实请求/响应，再把确实支持当前漏洞的 ID 交给 bind_finding_traffic。默认只返回 3 条、每页最多 10 条；结果多时用 page 翻页。"
+const TrafficSearchDescription = "기록 프록시가 이미 캡처한 대상 트래픽을 조회한다(host 필수. 호스트명, 호스트:포트, 전체 URL을 지원하며 URL 부분 문자열이나 본문 키워드로 추가 필터링 가능). 포트를 지정하면 해당 서비스의 트래픽만 반환하여 같은 IP의 다른 포트가 섞이지 않게 한다. body_contains는 캡처한 요청/응답 헤더와 본문을 전문 검색하며 임의 부분 문자열과 중국어를 지원한다(최소 3자). 응답 내용 없이 매우 가벼운 인덱스(id/method/url/status/resp_len)만 반환한다. 결과가 있으면 반드시 traffic_get으로 요청/응답을 하나씩 검증하고 현재 취약점을 실제로 뒷받침하는 ID만 bind_finding_traffic에 전달한다. 기본 3개, 페이지당 최대 10개이며 결과가 많으면 page로 넘긴다."
 
 // Traffic runs the recording proxy and owns the file tree + index.
 type Traffic struct {
@@ -278,13 +278,13 @@ func (t *Traffic) initIndex() error {
 	}
 	t.incrementalVacuum = mode == autoVacuumIncremental
 	if !t.incrementalVacuum {
-		log.Printf("[traffic] 索引库未启用增量回收（auto_vacuum=%d）：删除流量不会缩小 index.sqlite，需要执行一次存储压缩来转换", mode)
+		log.Printf("[traffic] 인덱스 DB의 증분 회수가 켜져 있지 않습니다(auto_vacuum=%d). 트래픽을 삭제해도 index.sqlite가 줄지 않으며 저장소 압축을 한 번 실행해 변환해야 합니다", mode)
 	}
 	if _, err := conn.ExecContext(ctx, indexSchema); err != nil {
 		return err
 	}
 	if _, err := conn.ExecContext(ctx, ftsSchema); err != nil {
-		log.Printf("[traffic] 全文索引不可用，正文搜索将被禁用（元数据搜索不受影响）：%v", err)
+		log.Printf("[traffic] 전문 인덱스를 사용할 수 없어 본문 검색을 비활성화합니다(메타데이터 검색에는 영향 없음): %v", err)
 		return nil
 	}
 	t.fts = true
@@ -334,17 +334,17 @@ func ValidateProxyURL(raw string) (*url.URL, error) {
 	raw = strings.TrimSpace(raw)
 	u, err := url.Parse(raw)
 	if err != nil {
-		return nil, fmt.Errorf("解析代理地址 %q: %w", raw, err)
+		return nil, fmt.Errorf("프록시 주소 %q 파싱: %w", raw, err)
 	}
 	switch u.Scheme {
 	case "http", "https", "socks5":
 	case "":
-		return nil, fmt.Errorf("代理 %q 缺少协议(用 http://、https:// 或 socks5://)", raw)
+		return nil, fmt.Errorf("프록시 %q에 프로토콜이 없습니다(http://, https:// 또는 socks5:// 사용)", raw)
 	default:
-		return nil, fmt.Errorf("不支持的代理协议 %q(用 http、https 或 socks5)", u.Scheme)
+		return nil, fmt.Errorf("지원하지 않는 프록시 프로토콜 %q(http, https 또는 socks5 사용)", u.Scheme)
 	}
 	if u.Host == "" {
-		return nil, fmt.Errorf("代理 %q 缺少主机地址", raw)
+		return nil, fmt.Errorf("프록시 %q에 호스트 주소가 없습니다", raw)
 	}
 	return u, nil
 }
@@ -414,7 +414,7 @@ func (t *Traffic) maybePassthrough(f *mproxy.Flow, err error) {
 		return
 	}
 	if _, loaded := t.pass.LoadOrStore(host, struct{}{}); !loaded {
-		log.Printf("[traffic] 与 %s 的 MITM 出错，改为透传（该 host 后续直连目标、不再记录，但请求照常）：%v", host, err)
+		log.Printf("[traffic] %s와 MITM 중 오류가 발생해 통과 전달로 전환합니다(이후 해당 host는 대상에 직접 연결하며 기록하지 않지만 요청은 정상 진행): %v", host, err)
 	}
 }
 
@@ -456,7 +456,7 @@ func (t *Traffic) record(f *mproxy.Flow) {
 
 	tx, err := t.db.Begin()
 	if err != nil {
-		log.Printf("[traffic] 记录 %s 失败（开启事务）：%v", url, err)
+		log.Printf("[traffic] %s 기록 실패(트랜잭션 시작): %v", url, err)
 		return
 	}
 	defer tx.Rollback() //nolint:errcheck // no-op once committed
@@ -468,19 +468,19 @@ VALUES(?,?,?,?,?,?,?,?,?,?,'')`,
 		id, now.Unix(), host, method, tmpl, url, f.Response.StatusCode, ct,
 		len(f.Request.Body), len(f.Response.Body))
 	if err != nil {
-		log.Printf("[traffic] 记录 %s 失败（写索引）：%v", url, err)
+		log.Printf("[traffic] %s 기록 실패(인덱스 쓰기): %v", url, err)
 		return
 	}
 	rowid, err := res.LastInsertId()
 	if err != nil {
-		log.Printf("[traffic] 记录 %s 失败（取 rowid）：%v", url, err)
+		log.Printf("[traffic] %s 기록 실패(rowid 조회): %v", url, err)
 		return
 	}
 
 	if _, err := tx.Exec(`INSERT OR REPLACE INTO exchange_bodies(id,req_head,req_body,req_blob,resp_head,resp_body,resp_blob)
 VALUES(?,?,?,?,?,?,?)`,
 		id, reqHead, reqB.inline, nullIfEmpty(reqB.hash), respHead, respB.inline, nullIfEmpty(respB.hash)); err != nil {
-		log.Printf("[traffic] 记录 %s 失败（写正文）：%v", url, err)
+		log.Printf("[traffic] %s 기록 실패(본문 쓰기): %v", url, err)
 		return
 	}
 
@@ -489,7 +489,7 @@ VALUES(?,?,?,?,?,?,?)`,
 			continue
 		}
 		if _, err := tx.Exec(`INSERT OR IGNORE INTO blob_refs(hash,exchange_id) VALUES(?,?)`, h, id); err != nil {
-			log.Printf("[traffic] 记录 %s 失败（登记 blob 引用）：%v", url, err)
+			log.Printf("[traffic] %s 기록 실패(blob 참조 등록): %v", url, err)
 			return
 		}
 	}
@@ -499,13 +499,13 @@ VALUES(?,?,?,?,?,?,?)`,
 		// fully searchable even though only its preview is stored inline.
 		idx := strings.Join([]string{url, reqHead, reqB.index, respHead, respB.index}, "\n")
 		if _, err := tx.Exec(`INSERT INTO ex_fts(rowid,content) VALUES(?,?)`, rowid, idx); err != nil {
-			log.Printf("[traffic] 记录 %s 失败（写全文索引）：%v", url, err)
+			log.Printf("[traffic] %s 기록 실패(전문 인덱스 쓰기): %v", url, err)
 			return
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
-		log.Printf("[traffic] 记录 %s 失败（提交）：%v", url, err)
+		log.Printf("[traffic] %s 기록 실패(커밋): %v", url, err)
 	}
 }
 
@@ -544,13 +544,13 @@ func (t *Traffic) spill(body []byte, contentType string) storedBody {
 	// the store only ever holds bodies above maxInlineBody, deduplicated by hash.
 	blobDir := filepath.Join(t.dir, "_blobs", "sha256", h[:2])
 	if err := os.MkdirAll(blobDir, 0o755); err != nil {
-		log.Printf("[traffic] 创建 blob 目录失败：%v", err)
+		log.Printf("[traffic] blob 디렉터리 생성 실패: %v", err)
 		return storedBody{inline: clipBytes(body, blobPreview), index: indexText()}
 	}
 	blobPath := filepath.Join(blobDir, h+".bin")
 	if _, err := os.Stat(blobPath); os.IsNotExist(err) {
 		if err := os.WriteFile(blobPath, body, 0o644); err != nil {
-			log.Printf("[traffic] 写 blob %s 失败：%v", h, err)
+			log.Printf("[traffic] blob %s 쓰기 실패: %v", h, err)
 			return storedBody{inline: clipBytes(body, blobPreview), index: indexText()}
 		}
 	}
@@ -689,7 +689,7 @@ func (t *Traffic) blobPath(hash string) (string, error) {
 	// Validated as pure hex before touching the filesystem, so a crafted hash can
 	// never traverse out of the blob directory.
 	if !blobHashRe.MatchString(hash) {
-		return "", fmt.Errorf("非法的 blob hash")
+		return "", fmt.Errorf("잘못된 blob hash")
 	}
 	for _, p := range []string{
 		filepath.Join(t.dir, "_blobs", "sha256", hash[:2], hash+".bin"),
@@ -699,7 +699,7 @@ func (t *Traffic) blobPath(hash string) (string, error) {
 			return p, nil
 		}
 	}
-	return "", fmt.Errorf("blob %s 不存在", hash)
+	return "", fmt.Errorf("blob %s가 없습니다", hash)
 }
 
 // Blob opens a spilled body for streaming; the caller must close the file.
@@ -967,7 +967,7 @@ FROM exchange_bodies b JOIN exchanges e ON e.id=b.id WHERE b.id=?`, id).
 		return "", "", err
 	}
 	if strings.TrimSpace(rel) == "" {
-		return "", "", fmt.Errorf("exchange %s 无正文记录", id)
+		return "", "", fmt.Errorf("exchange %s에 본문 기록이 없습니다", id)
 	}
 	rb, _ := os.ReadFile(filepath.Join(t.dir, rel, "request.http"))
 	pb, _ := os.ReadFile(filepath.Join(t.dir, rel, "response.http"))
@@ -1054,7 +1054,7 @@ func (t *Traffic) DeleteHost(host string) (int64, error) {
 		return 0, errors.Join(err, restoreTrees(stageDir, moves))
 	}
 	if err := tx.Commit(); err != nil {
-		return 0, errors.Join(fmt.Errorf("提交流量索引删除: %w", err), restoreTrees(stageDir, moves))
+		return 0, errors.Join(fmt.Errorf("트래픽 인덱스 삭제 커밋: %w", err), restoreTrees(stageDir, moves))
 	}
 	t.reapStage(stageDir)
 	if n > 0 {
@@ -1103,7 +1103,7 @@ func (t *Traffic) DeleteAll() (deleted int64, reclaimed int64, err error) {
 		return 0, 0, errors.Join(err, restoreTrees(stageDir, moves))
 	}
 	if err := tx.Commit(); err != nil {
-		return 0, 0, errors.Join(fmt.Errorf("提交流量索引删除: %w", err), restoreTrees(stageDir, moves))
+		return 0, 0, errors.Join(fmt.Errorf("트래픽 인덱스 삭제 커밋: %w", err), restoreTrees(stageDir, moves))
 	}
 	t.reapStage(stageDir)
 	if err := t.gcBlobs(); err != nil {
@@ -1112,7 +1112,7 @@ func (t *Traffic) DeleteAll() (deleted int64, reclaimed int64, err error) {
 	if err := t.compactIndex(); err != nil {
 		// The deletion is already durable; compaction is disk space, not
 		// correctness, so it must not turn a completed purge into a failed one.
-		log.Printf("[traffic] 压实索引失败：%v", err)
+		log.Printf("[traffic] 인덱스 압축 실패: %v", err)
 		return deleted, 0, nil
 	}
 	return deleted, before - t.indexBytes(), nil
@@ -1154,14 +1154,14 @@ func (t *Traffic) compactIndex() error {
 		// A full merge, not the bounded one reclaim uses: with the index emptied
 		// there is nothing left to merge, so this only discards the tombstones.
 		if _, err := conn.ExecContext(ctx, `INSERT INTO ex_fts(ex_fts) VALUES('optimize')`); err != nil {
-			return fmt.Errorf("合并全文索引: %w", err)
+			return fmt.Errorf("전문 인덱스 병합: %w", err)
 		}
 	}
 	if _, err := conn.ExecContext(ctx, `PRAGMA auto_vacuum=incremental`); err != nil {
 		return err
 	}
 	if _, err := conn.ExecContext(ctx, `VACUUM`); err != nil {
-		return fmt.Errorf("压实索引: %w", err)
+		return fmt.Errorf("인덱스 압축: %w", err)
 	}
 	var mode int
 	if err := conn.QueryRowContext(ctx, `PRAGMA auto_vacuum`).Scan(&mode); err != nil {
@@ -1171,7 +1171,7 @@ func (t *Traffic) compactIndex() error {
 	// space on their own instead of waiting for another purge.
 	t.incrementalVacuum = mode == autoVacuumIncremental
 	if _, err := conn.ExecContext(ctx, `PRAGMA wal_checkpoint(TRUNCATE)`); err != nil {
-		return fmt.Errorf("截断 WAL: %w", err)
+		return fmt.Errorf("WAL 잘라내기: %w", err)
 	}
 	return nil
 }
@@ -1183,18 +1183,18 @@ func (t *Traffic) deleteWhere(tx *sql.Tx, where string, args ...any) (int64, err
 	if t.fts {
 		// ex_fts is contentless and addressed by rowid, hence the rowid sub-select.
 		if _, err := tx.Exec(`DELETE FROM ex_fts WHERE rowid IN (SELECT rowid FROM exchanges WHERE `+where+`)`, args...); err != nil {
-			return 0, fmt.Errorf("删除全文索引: %w", err)
+			return 0, fmt.Errorf("전문 인덱스 삭제: %w", err)
 		}
 	}
 	if _, err := tx.Exec(`DELETE FROM exchange_bodies WHERE id IN (SELECT id FROM exchanges WHERE `+where+`)`, args...); err != nil {
-		return 0, fmt.Errorf("删除正文: %w", err)
+		return 0, fmt.Errorf("본문 삭제: %w", err)
 	}
 	if _, err := tx.Exec(`DELETE FROM blob_refs WHERE exchange_id IN (SELECT id FROM exchanges WHERE `+where+`)`, args...); err != nil {
-		return 0, fmt.Errorf("删除 blob 引用: %w", err)
+		return 0, fmt.Errorf("blob 참조 삭제: %w", err)
 	}
 	res, err := tx.Exec(`DELETE FROM exchanges WHERE `+where, args...)
 	if err != nil {
-		return 0, fmt.Errorf("删除索引行: %w", err)
+		return 0, fmt.Errorf("인덱스 행 삭제: %w", err)
 	}
 	n, _ := res.RowsAffected()
 	return n, nil
@@ -1265,24 +1265,24 @@ func (t *Traffic) stageTreesForArchive(dirs, hosts []string, archiveID, taskID i
 			if os.IsNotExist(err) {
 				continue
 			}
-			return stageDir, moves, fmt.Errorf("检查历史流量目录 %s: %w", source, err)
+			return stageDir, moves, fmt.Errorf("기존 트래픽 디렉터리 %s 확인: %w", source, err)
 		}
 		planned = append(planned, stagedTrafficPath{source: source})
 	}
-	// 归档路径即使一个历史 host 目录都没有(新装机的流量只落在 SQLite + _blobs)
-	// 也必须留下 journal：崩溃点若落在 PostgreSQL 提交与 SQLite 提交之间，重启后
-	// SQLite 事务被回滚，只有这份 journal 能让恢复流程补做 host 行的删除。少了它，
-	// 已转冷任务的独占流量会永久留在热库里。
+	// 보관 경로에 기존 host 디렉터리가 하나도 없어도(새 설치의 트래픽은 SQLite + _blobs에만 저장)
+	// journal을 남겨야 한다. PostgreSQL 커밋과 SQLite 커밋 사이에 충돌하면 재시작 후
+	// SQLite 트랜잭션이 롤백되며 이 journal만이 복구 과정에서 host 행 삭제를 보완할 수 있다. 없으면
+	// 콜드 저장소로 이동한 작업의 전용 트래픽이 핫 DB에 영구히 남는다.
 	uniqueHosts := uniqueArchiveHosts(hosts)
 	if len(planned) == 0 && len(uniqueHosts) == 0 {
 		return "", nil, nil
 	}
 	parent := filepath.Join(t.dir, "_delete_staging")
 	if err := os.MkdirAll(parent, 0o700); err != nil {
-		return "", nil, fmt.Errorf("创建流量暂存目录: %w", err)
+		return "", nil, fmt.Errorf("트래픽 임시 저장 디렉터리 생성: %w", err)
 	}
 	if stageDir, err = os.MkdirTemp(parent, "hosts-"); err != nil {
-		return "", nil, fmt.Errorf("创建流量暂存目录: %w", err)
+		return "", nil, fmt.Errorf("트래픽 임시 저장 디렉터리 생성: %w", err)
 	}
 	journal := hostDeleteStageJournal{Version: 1, ArchiveID: archiveID, TaskID: taskID, Hosts: uniqueHosts}
 	for i := range planned {
@@ -1296,7 +1296,7 @@ func (t *Traffic) stageTreesForArchive(dirs, hosts []string, archiveID, taskID i
 	for _, move := range planned {
 		source, staged := move.source, move.staged
 		if err := os.Rename(source, staged); err != nil {
-			return stageDir, moves, fmt.Errorf("移出历史流量目录 %s: %w", source, err)
+			return stageDir, moves, fmt.Errorf("기존 트래픽 디렉터리 %s 이동: %w", source, err)
 		}
 		moves = append(moves, stagedTrafficPath{source: source, staged: staged})
 	}
@@ -1360,7 +1360,7 @@ func (t *Traffic) reapStage(stageDir string) {
 	}
 	t.reaping.Go(func() {
 		if err := os.RemoveAll(stageDir); err != nil {
-			log.Printf("[traffic] 清理历史流量目录 %s 失败：%v", stageDir, err)
+			log.Printf("[traffic] 기존 트래픽 디렉터리 %s 정리 실패: %v", stageDir, err)
 		}
 	})
 }
@@ -1426,7 +1426,7 @@ func (t *Traffic) stageDeleteHostsExact(hosts []string, archiveID, taskID int64)
 	stage := &HostDeleteStage{traffic: t}
 	fail := func(cause error) (*HostDeleteStage, error) {
 		if rollbackErr := stage.rollbackLocked(); rollbackErr != nil {
-			return nil, errors.Join(cause, fmt.Errorf("回滚流量删除: %w", rollbackErr))
+			return nil, errors.Join(cause, fmt.Errorf("트래픽 삭제 롤백: %w", rollbackErr))
 		}
 		return nil, cause
 	}
@@ -1510,17 +1510,17 @@ func (t *Traffic) RecoverHostDeleteStages(archiveCommitted func(int64, int64) (b
 		}
 		var journal hostDeleteStageJournal
 		if err := json.Unmarshal(raw, &journal); err != nil {
-			errs = append(errs, fmt.Errorf("读取流量暂存日志 %s: %w", stageDir, err))
+			errs = append(errs, fmt.Errorf("트래픽 임시 저장 로그 %s 읽기: %w", stageDir, err))
 			continue
 		}
 		if journal.Version != 1 {
-			errs = append(errs, fmt.Errorf("流量暂存日志 %s 的版本 %d 不受支持", stageDir, journal.Version))
+			errs = append(errs, fmt.Errorf("트래픽 임시 저장 로그 %s의 버전 %d는 지원하지 않습니다", stageDir, journal.Version))
 			continue
 		}
 		moves := make([]stagedTrafficPath, 0, len(journal.Moves))
 		for _, move := range journal.Moves {
 			if !pathWithin(t.dir, move.Source) || !pathWithin(stageDir, move.Staged) {
-				errs = append(errs, fmt.Errorf("流量暂存日志包含越界路径: %s", stageDir))
+				errs = append(errs, fmt.Errorf("트래픽 임시 저장 로그에 범위를 벗어난 경로가 있습니다: %s", stageDir))
 				moves = nil
 				break
 			}
@@ -1538,7 +1538,7 @@ func (t *Traffic) RecoverHostDeleteStages(archiveCommitted func(int64, int64) (b
 		committed := false
 		if journal.ArchiveID > 0 {
 			if archiveCommitted == nil {
-				errs = append(errs, fmt.Errorf("流量归档 %d 无状态解析器", journal.ArchiveID))
+				errs = append(errs, fmt.Errorf("트래픽 보관 %d에 상태 해석기가 없습니다", journal.ArchiveID))
 				continue
 			}
 			committed, err = archiveCommitted(journal.ArchiveID, journal.TaskID)
@@ -1633,7 +1633,7 @@ func (s *HostDeleteStage) rollbackLocked() error {
 	var errs []error
 	if s.tx != nil {
 		if err := s.tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
-			errs = append(errs, fmt.Errorf("回滚流量索引: %w", err))
+			errs = append(errs, fmt.Errorf("트래픽 인덱스 롤백: %w", err))
 		}
 	}
 	if err := restoreTrees(s.stageDir, s.moves); err != nil {
@@ -1656,7 +1656,7 @@ func (s *HostDeleteStage) Commit() error {
 		restoreErr := restoreTrees(s.stageDir, s.moves)
 		s.done = true
 		s.traffic.wmu.Unlock()
-		return errors.Join(fmt.Errorf("提交流量索引删除: %w", err), restoreErr)
+		return errors.Join(fmt.Errorf("트래픽 인덱스 삭제 커밋: %w", err), restoreErr)
 	}
 	// Unlinking the staged trees is what used to hold the write lock for hours;
 	// it now runs in the background, while collection below only needs them to be
@@ -1665,7 +1665,7 @@ func (s *HostDeleteStage) Commit() error {
 	s.traffic.reclaim()
 	var errs []error
 	if err := s.traffic.gcBlobs(); err != nil {
-		errs = append(errs, fmt.Errorf("回收流量 blob: %w", err))
+		errs = append(errs, fmt.Errorf("트래픽 blob 회수: %w", err))
 	}
 	s.done = true
 	s.traffic.wmu.Unlock()
@@ -1714,7 +1714,7 @@ func (t *Traffic) reclaim() {
 		ctx := context.Background()
 		conn, err := t.db.Conn(ctx)
 		if err != nil {
-			log.Printf("[traffic] 回收索引空间失败（获取连接）：%v", err)
+			log.Printf("[traffic] 인덱스 공간 회수 실패(연결 확보): %v", err)
 			return
 		}
 		defer conn.Close()
@@ -1725,7 +1725,7 @@ func (t *Traffic) reclaim() {
 			progressed, err := t.reclaimChunk(ctx, conn, &merges)
 			t.wmu.Unlock()
 			if err != nil {
-				log.Printf("[traffic] 回收索引空间失败：%v", err)
+				log.Printf("[traffic] 인덱스 공간 회수 실패: %v", err)
 				return
 			}
 			if !progressed {
@@ -1735,11 +1735,11 @@ func (t *Traffic) reclaim() {
 				return // shutdown must not wait out the remaining budget
 			}
 			if step+1 >= reclaimMaxSteps {
-				log.Printf("[traffic] 索引空间回收未做完（已用满 %d 步上限），下次删除时继续", reclaimMaxSteps)
+				log.Printf("[traffic] 인덱스 공간 회수 미완료(%d단계 상한 소진). 다음 삭제 때 계속합니다", reclaimMaxSteps)
 				return
 			}
 			if time.Now().After(deadline) {
-				log.Printf("[traffic] 索引空间回收未做完（已用满 %s 预算），下次删除时继续", reclaimBudget)
+				log.Printf("[traffic] 인덱스 공간 회수 미완료(%s 예산 소진). 다음 삭제 때 계속합니다", reclaimBudget)
 				return
 			}
 		}
@@ -1749,7 +1749,7 @@ func (t *Traffic) reclaim() {
 		t.wmu.Lock()
 		defer t.wmu.Unlock()
 		if _, err := conn.ExecContext(ctx, `PRAGMA wal_checkpoint(TRUNCATE)`); err != nil {
-			log.Printf("[traffic] 截断 WAL 失败：%v", err)
+			log.Printf("[traffic] WAL 잘라내기 실패: %v", err)
 		}
 	})
 }
@@ -1762,7 +1762,7 @@ func (t *Traffic) reclaimChunk(ctx context.Context, conn *sql.Conn, merges *int)
 	if t.fts && *merges > 0 {
 		// A negative rank is fts5's page budget for one incremental merge.
 		if _, err := conn.ExecContext(ctx, `INSERT INTO ex_fts(ex_fts, rank) VALUES('merge', ?)`, -reclaimMergePages); err != nil {
-			return false, fmt.Errorf("合并全文索引: %w", err)
+			return false, fmt.Errorf("전문 인덱스 병합: %w", err)
 		}
 		*merges--
 		progressed = true
@@ -1782,7 +1782,7 @@ func (t *Traffic) reclaimChunk(ctx context.Context, conn *sql.Conn, merges *int)
 	}
 	// The budget is a constant and PRAGMA arguments cannot be bound as parameters.
 	if _, err := conn.ExecContext(ctx, fmt.Sprintf(`PRAGMA incremental_vacuum(%d)`, reclaimChunkPages)); err != nil {
-		return false, fmt.Errorf("回收索引空闲页: %w", err)
+		return false, fmt.Errorf("인덱스 빈 페이지 회수: %w", err)
 	}
 	if err := conn.QueryRowContext(ctx, `PRAGMA freelist_count`).Scan(&after); err != nil {
 		return false, err
@@ -1934,9 +1934,9 @@ func (t *Traffic) query(host, contains, bodyContains string, page, limit int) ([
 		cond, arg, ok := t.ftsFilter(b)
 		if !ok {
 			if !t.fts {
-				return nil, fmt.Errorf("当前实例未启用全文索引，无法按正文搜索")
+				return nil, fmt.Errorf("현재 인스턴스에 전문 인덱스가 없어 본문으로 검색할 수 없습니다")
 			}
-			return nil, fmt.Errorf("正文搜索关键词至少需要 %d 个字符（当前 %d 个）", minTrigram, utf8.RuneCountInString(b))
+			return nil, fmt.Errorf("본문 검색 키워드는 최소 %d자여야 합니다(현재 %d자)", minTrigram, utf8.RuneCountInString(b))
 		}
 		q += ` AND ` + cond
 		args = append(args, arg)
@@ -1966,12 +1966,12 @@ func (t *Traffic) query(host, contains, bodyContains string, page, limit int) ([
 func normalizeSearchHost(raw string) (host, port string, err error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
-		return "", "", errors.New("host 为必填参数")
+		return "", "", errors.New("host는 필수 인수입니다")
 	}
 	if strings.Contains(raw, "://") {
 		u, parseErr := url.Parse(raw)
 		if parseErr != nil || u.Host == "" {
-			return "", "", fmt.Errorf("无法解析 host：%q", raw)
+			return "", "", fmt.Errorf("host를 파싱할 수 없습니다: %q", raw)
 		}
 		host, port = u.Hostname(), u.Port()
 	} else if h, p, splitErr := net.SplitHostPort(raw); splitErr == nil {
@@ -1983,12 +1983,12 @@ func normalizeSearchHost(raw string) (host, port string, err error) {
 	}
 	host = strings.Trim(strings.TrimSpace(host), "[]")
 	if host == "" {
-		return "", "", fmt.Errorf("无法解析 host：%q", raw)
+		return "", "", fmt.Errorf("host를 파싱할 수 없습니다: %q", raw)
 	}
 	if port != "" {
 		p, parseErr := strconv.Atoi(port)
 		if parseErr != nil || p < 1 || p > 65535 {
-			return "", "", fmt.Errorf("端口无效：%q", port)
+			return "", "", fmt.Errorf("잘못된 포트: %q", port)
 		}
 		port = strconv.Itoa(p)
 	}
@@ -2009,11 +2009,11 @@ func (t *Traffic) Tools() []actool.CoreTool {
 		Schema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"host":          map[string]any{"type": "string", "description": "按主机过滤（必填；如 '107.172.96.177'、'107.172.96.177:8082' 或 'http://107.172.96.177:8082/path'）"},
-				"contains":      map[string]any{"type": "string", "description": "URL 子串过滤（可选，如 'api' / 'login'）"},
-				"body_contains": map[string]any{"type": "string", "description": "正文全文搜索（可选，至少 3 个字符），匹配请求/响应的头与正文，如 'password' / 'root:x:0' / '内网测试'"},
-				"limit":         map[string]any{"type": "integer", "description": "每页条数，默认 3，最大 10"},
-				"page":          map[string]any{"type": "integer", "description": "页码，从 0 开始，默认 0（按 ts 倒序分页）"},
+				"host":          map[string]any{"type": "string", "description": "호스트로 필터링(필수. 예: '107.172.96.177', '107.172.96.177:8082', 'http://107.172.96.177:8082/path')"},
+				"contains":      map[string]any{"type": "string", "description": "URL 부분 문자열 필터(선택. 예: 'api' / 'login')"},
+				"body_contains": map[string]any{"type": "string", "description": "본문 전문 검색(선택, 최소 3자). 요청/응답 헤더와 본문에 매칭. 예: 'password' / 'root:x:0' / '내부망 테스트'"},
+				"limit":         map[string]any{"type": "integer", "description": "페이지당 항목 수. 기본 3, 최대 10"},
+				"page":          map[string]any{"type": "integer", "description": "0부터 시작하는 페이지 번호. 기본 0(ts 내림차순 페이지 처리)"},
 			},
 			"required": []any{"host"},
 		},
@@ -2028,16 +2028,16 @@ func (t *Traffic) Tools() []actool.CoreTool {
 			}
 			_ = json.Unmarshal(in, &a)
 			if strings.TrimSpace(a.Host) == "" {
-				return actool.Errorf("host 为必填参数：请指定裸主机、主机:端口或完整 URL，避免全库扫描。"), nil
+				return actool.Errorf("host는 필수 인수입니다. 전체 DB 검색을 피하려면 호스트명, 호스트:포트 또는 전체 URL을 지정하세요."), nil
 			}
 			rows, err := t.query(a.Host, a.Contains, a.BodyContains, a.Page, a.Limit)
 			if err != nil {
 				return actool.Errorf(err.Error()), nil
 			}
 			if len(rows) == 0 {
-				return actool.Text("无匹配流量。"), nil
+				return actool.Text("일치하는 트래픽이 없습니다."), nil
 			}
-			// 精简为最小索引：仅保留定位所需字段 + 响应码/长度，不带任何响应内容。
+			// 최소 인덱스로 축약한다. 위치 식별에 필요한 필드와 응답 코드/길이만 유지하고 응답 내용은 포함하지 않는다.
 			type liteRow struct {
 				ID      string `json:"id"`
 				Method  string `json:"method"`
@@ -2056,10 +2056,10 @@ func (t *Traffic) Tools() []actool.CoreTool {
 
 	get := actool.Build(actool.Spec{
 		Name:        "traffic_get",
-		Description: "按 id 取一条已抓流量的请求/响应原文（过大会截断）。配合 traffic_search 用，避免重复 curl。",
+		Description: "id로 이미 캡처한 트래픽 하나의 요청/응답 원문을 가져온다(너무 크면 잘림). traffic_search와 함께 사용하여 중복 curl을 피한다.",
 		Schema: map[string]any{
 			"type":       "object",
-			"properties": map[string]any{"id": map[string]any{"type": "string", "description": "traffic_search 返回的 id"}},
+			"properties": map[string]any{"id": map[string]any{"type": "string", "description": "traffic_search가 반환한 id"}},
 			"required":   []any{"id"},
 		},
 		ReadOnly:    ro,
@@ -2077,13 +2077,13 @@ func (t *Traffic) Tools() []actool.CoreTool {
 
 	blob := actool.Build(actool.Spec{
 		Name:        "traffic_blob",
-		Description: "分段读取超大请求/响应体的原文。traffic_get 里显示为 '…[truncated] @blob sha256:<hash>' 的部分即存放于此，把该 hash 传进来即可取完整内容。单次最多返回 8KB，用 offset 继续往后读（返回结果会给出总长度）。适合翻阅备份文件、源码泄露、大 JSON 导出等超过内联阈值的响应。",
+		Description: "매우 큰 요청/응답 본문 원문을 나누어 읽는다. traffic_get에서 '…[truncated] @blob sha256:<hash>'로 표시되는 부분이 여기에 저장되므로 hash를 전달하면 전체 내용을 가져올 수 있다. 한 번에 최대 8KB를 반환하며 offset으로 이어 읽는다(결과에 총 길이 표시). 백업 파일, 유출 소스 코드, 대형 JSON 내보내기 등 인라인 한도를 넘는 응답을 읽는 데 적합하다.",
 		Schema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"hash":   map[string]any{"type": "string", "description": "traffic_get 中 @blob sha256: 后面的 64 位十六进制值"},
-				"offset": map[string]any{"type": "integer", "description": "起始字节偏移，默认 0"},
-				"length": map[string]any{"type": "integer", "description": "本次读取字节数，默认且最大 8192"},
+				"hash":   map[string]any{"type": "string", "description": "traffic_get의 @blob sha256: 뒤에 있는 64자리 16진수 값"},
+				"offset": map[string]any{"type": "integer", "description": "시작 바이트 오프셋. 기본 0"},
+				"length": map[string]any{"type": "integer", "description": "이번에 읽을 바이트 수. 기본값이자 최댓값 8192"},
 			},
 			"required": []any{"hash"},
 		},
@@ -2104,11 +2104,11 @@ func (t *Traffic) Tools() []actool.CoreTool {
 				return actool.Errorf(err.Error()), nil
 			}
 			if len(data) == 0 {
-				return actool.Text(fmt.Sprintf("偏移 %d 已超出内容长度（总长 %d 字节）。", a.Offset, total)), nil
+				return actool.Text(fmt.Sprintf("오프셋 %d가 내용 길이를 넘었습니다(총 %d바이트).", a.Offset, total)), nil
 			}
-			head := fmt.Sprintf("[offset=%d 本次=%d 总长=%d]\n", a.Offset, len(data), total)
+			head := fmt.Sprintf("[offset=%d 이번=%d 총길이=%d]\n", a.Offset, len(data), total)
 			if isBinaryBody("", data) {
-				return actool.Text(head + "二进制内容，以十六进制展示前 512 字节：\n" + hex.EncodeToString(clipBytes(data, 512))), nil
+				return actool.Text(head + "바이너리 내용입니다. 처음 512바이트를 16진수로 표시합니다:\n" + hex.EncodeToString(clipBytes(data, 512))), nil
 			}
 			return actool.Text(head + truncateUTF8(data, len(data))), nil
 		},
@@ -2126,5 +2126,5 @@ func clip(s string, max int) string {
 	if len(s) <= max {
 		return s
 	}
-	return s[:max] + fmt.Sprintf("\n... [截断，共 %d 字节；完整在流量文件树] ...", len(s))
+	return s[:max] + fmt.Sprintf("\n... [잘림, 총 %d바이트. 전체 내용은 트래픽 파일 트리에 있음] ...", len(s))
 }

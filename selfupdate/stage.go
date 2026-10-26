@@ -15,13 +15,13 @@ import (
 	"time"
 )
 
-// sumsAsset 是 release.yml 生成的校验和清单，覆盖 Release 里全部 zip。
+// sumsAsset은 release.yml이 만드는 체크섬 목록이며 Release의 모든 zip을 포함한다.
 const sumsAsset = "SHA256SUMS"
 
-// maxBinarySize 限制解压出来的二进制体积，防止畸形 zip 把磁盘写满。
+// maxBinarySize는 비정상 zip이 디스크를 채우지 않도록 압축 해제된 바이너리 크기를 제한한다.
 const maxBinarySize = 512 << 20 // 512 MiB
 
-// Phase 是升级过程中的阶段，直接用作 SSE 事件里的 phase 字段。
+// Phase는 업그레이드 단계이며 SSE 이벤트의 phase 필드에 그대로 사용한다.
 type Phase string
 
 const (
@@ -33,17 +33,17 @@ const (
 	PhaseFailed   Phase = "failed"
 )
 
-// Progress 由调用方提供，用来把进度推给前端。pct 仅在下载阶段有意义（0-100），
-// 其余阶段传 -1。
+// Progress는 호출자가 제공하며 진행률을 프런트엔드로 전달한다. pct는 다운로드 중에만 유효하며(0-100),
+// 다른 단계에서는 -1을 전달한다.
 type Progress func(ph Phase, pct int, msg string)
 
-// Stage 下载指定 Release 的当前平台发布包，校验后把新二进制暂存为 artex.new。
+// Stage는 지정 Release에서 현재 플랫폼 패키지를 내려받고 검증 후 새 바이너리를 artex.new로 임시 저장한다.
 //
-// 走的是完整 zip 而不是裸二进制，理由有两个：现有 Release 的 SHA256SUMS 本来就
-// 只覆盖 zip，走 zip 不需要改 CI，也能兼容已经发布出去的历史版本；zip 里还带着
-// skills/，为将来同步内置 skill 留了口子。代价只是多下载 skills 那几百 KB。
+// 개별 바이너리 대신 전체 zip을 사용하는 이유는 두 가지다. 기존 Release의 SHA256SUMS가
+// zip만 포함하므로 CI 변경 없이 이미 배포된 버전과 호환되며, zip에는
+// skills/도 있어 향후 내장 스킬 동기화에 활용할 수 있다. 추가 비용은 스킬 수백 KB 다운로드뿐이다.
 //
-// 函数返回即代表暂存完成，调用方随后优雅关闭并以 ExitRestart 退出。
+// 함수가 반환되면 임시 저장이 완료된 것이며, 호출자는 정상 종료 절차 후 ExitRestart로 종료한다.
 func Stage(ctx context.Context, c *http.Client, rel *Release, currentVersion string, prog Progress) error {
 	if prog == nil {
 		prog = func(Phase, int, string) {}
@@ -72,8 +72,8 @@ func Stage(ctx context.Context, c *http.Client, rel *Release, currentVersion str
 		return fmt.Errorf("%s 에 %s 항목이 없어 검증되지 않은 바이너리 설치를 거부합니다", sumsAsset, name)
 	}
 
-	// 临时文件全部落在目标目录里，保证最后的 rename 是同一文件系统内的原子操作
-	// （跨设备 rename 会失败，而 /tmp 常常是独立挂载点）。
+	// 임시 파일은 모두 대상 디렉터리에 두어 최종 rename이 같은 파일 시스템 안에서 원자적으로 이루어지게 한다.
+	// (장치 간 rename은 실패하며 /tmp는 별도 마운트 지점인 경우가 많다.)
 	zipPath := p.New + ".zip.part"
 	binPath := p.New + ".part"
 	defer func() {
@@ -100,8 +100,8 @@ func Stage(ctx context.Context, c *http.Client, rel *Release, currentVersion str
 		return fmt.Errorf("새 버전이 현재 시스템에서 실행되지 않습니다: %w", err)
 	}
 
-	// 暂存件自己的 sha256 单独存一份：下次启动换装前还要再校验一次，
-	// 防止暂存后到重启前这段时间里文件被改动或写坏。
+	// 임시 저장 파일의 sha256을 별도로 보관해 다음 시작 시 교체 전에 다시 검증한다.
+	// 임시 저장과 재시작 사이에 파일이 변조되거나 잘못 기록되는 경우를 방지한다.
 	binSum, err := fileSHA256(binPath)
 	if err != nil {
 		return fmt.Errorf("새 바이너리 체크섬 계산 실패: %w", err)
@@ -119,7 +119,7 @@ func Stage(ctx context.Context, c *http.Client, rel *Release, currentVersion str
 		To:       strings.TrimPrefix(rel.TagName, "v"),
 		StagedAt: time.Now().Unix(),
 	}); err != nil {
-		// 标记只影响自动回滚能力，暂存件本身已就位，不因此中断升级。
+		// 표식은 자동 롤백에만 영향을 준다. 임시 파일은 준비됐으므로 업그레이드를 중단하지 않는다.
 		prog(PhaseStaged, -1, "경고: 업데이트 표시 파일 기록에 실패해 이번 업데이트는 자동 롤백 보호를 받지 못합니다")
 	}
 
@@ -127,7 +127,7 @@ func Stage(ctx context.Context, c *http.Client, rel *Release, currentVersion str
 	return nil
 }
 
-// fetchSums 下载并解析 SHA256SUMS，返回 文件名 → 十六进制摘要。
+// fetchSums는 SHA256SUMS를 내려받아 파싱하고 파일명 → 16진수 해시를 반환한다.
 func fetchSums(ctx context.Context, c *http.Client, rel *Release) (map[string]string, error) {
 	asset, ok := rel.FindAsset(sumsAsset)
 	if !ok {
@@ -150,16 +150,16 @@ func fetchSums(ctx context.Context, c *http.Client, rel *Release) (map[string]st
 	return out, nil
 }
 
-// parseSums 解析 sha256sum 风格的清单，返回 文件名 → 十六进制摘要。
+// parseSums는 sha256sum 형식의 목록을 파싱하고 파일명 → 16진수 해시를 반환한다.
 //
-// 第一个字段必须是 64 位十六进制才收录。只按"恰好两个字段"判断是不够的——
-// 任意一行两个单词的说明文字都会被当成合法条目，把垃圾值塞进摘要表，
-// 真正的资产反而可能匹配到错误的摘要。
+// 첫 필드가 64자리 16진수인 경우만 포함한다. '정확히 두 필드'만 확인해서는 부족하다.
+// 두 단어로 된 설명도 유효한 항목으로 오인하여 잘못된 값을 해시 표에 넣고,
+// 실제 자산에 잘못된 해시가 대응될 수 있기 때문이다.
 func parseSums(raw string) map[string]string {
 	out := map[string]string{}
 	for line := range strings.Lines(raw) {
-		// 格式为 "<sha256>  <filename>"（sha256sum 用双空格；shasum 的二进制
-		// 模式会给文件名加 * 前缀）。
+		// 형식은 "<sha256>  <filename>"이다(sha256sum은 공백 두 개, shasum의 바이너리
+		// 모드는 파일명에 * 접두사를 붙인다).
 		fields := strings.Fields(strings.TrimSpace(line))
 		if len(fields) != 2 || !isHexSHA256(fields[0]) {
 			continue
@@ -187,7 +187,7 @@ func isHexSHA256(s string) bool {
 	return true
 }
 
-// download 把资产写入 dst，同时计算 SHA256 并按 Content-Length 汇报进度。
+// download는 자산을 dst에 쓰면서 SHA256을 계산하고 Content-Length 기준 진행률을 보고한다.
 func download(ctx context.Context, c *http.Client, a Asset, dst string, prog Progress) (string, error) {
 	body, err := get(ctx, c, a.URL)
 	if err != nil {
@@ -215,7 +215,7 @@ func download(ctx context.Context, c *http.Client, a Asset, dst string, prog Pro
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-// get 发起一个受白名单约束的 GET，返回响应体。
+// get은 허용 목록의 제약을 받는 GET을 실행하고 응답 본문을 반환한다.
 func get(ctx context.Context, c *http.Client, rawURL string) (io.ReadCloser, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
 	if err != nil {
@@ -236,10 +236,10 @@ func get(ctx context.Context, c *http.Client, rawURL string) (io.ReadCloser, err
 	return resp.Body, nil
 }
 
-// extractBinary 从发布包里取出 artex 可执行文件。
+// extractBinary는 배포 패키지에서 artex 실행 파일을 꺼낸다.
 //
-// 包内结构是 artex-<版本>-<os>-<arch>/artex，但这里按**基名**匹配而不是拼完整
-// 路径：版本号在包名里出现过一次，拼错一个字符就整个升级失败，按基名找更耐改。
+// 패키지 구조는 artex-<버전>-<os>-<arch>/artex이지만 전체 경로 대신 **파일명**으로 찾는다.
+// 패키지명에 버전이 있어 한 글자만 틀려도 업그레이드가 실패하므로 파일명 매칭이 변경에 더 강하다.
 func extractBinary(zipPath, dst string) error {
 	want := "artex"
 	if runtime.GOOS == "windows" {
@@ -282,8 +282,8 @@ func extractBinary(zipPath, dst string) error {
 	return fmt.Errorf("릴리스 패키지에서 %s 파일을 찾지 못했습니다", want)
 }
 
-// checkWritable 提前确认目录可写。没有这一步，非 root 运行、或二进制被放在系统
-// 目录时，会在下载完几十 MB 之后才在换装那一刻失败。
+// checkWritable은 디렉터리에 쓸 수 있는지 미리 확인한다. 이 검사가 없으면 비 root 실행이나 시스템
+// 디렉터리에 둔 바이너리는 수십 MB를 내려받은 뒤 실제 교체 순간에야 실패한다.
 func checkWritable(dir string) error {
 	probe, err := os.CreateTemp(dir, ".artex-update-probe-*")
 	if err != nil {
@@ -295,7 +295,7 @@ func checkWritable(dir string) error {
 	return nil
 }
 
-// progressWriter 统计已写字节并限频汇报，避免每个 32KiB 分块都推一条 SSE。
+// progressWriter는 기록한 바이트를 집계하고 보고 빈도를 제한해 32KiB 청크마다 SSE를 보내지 않는다.
 type progressWriter struct {
 	total   int64
 	written int64

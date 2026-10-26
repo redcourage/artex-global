@@ -93,8 +93,8 @@ function TaskLLMControl({ task, profiles, onUpdated }: { task: Task; profiles: L
 
   const chain = taskProfileIDs(task);
   const exhausted = task.llm_failover_state === "chain_exhausted";
-  // 任何状态都可以改链,终态也不例外:任务结束后主 Agent 对话仍走这条链,
-  // 链上模型出问题时必须能换掉,否则已完成任务就没法继续交互。
+  // 종료 상태를 포함해 모든 상태에서 체인을 변경할 수 있다. 작업 종료 후에도 주 Agent 대화가 이 체인을 사용하므로
+  // 체인 모델에 문제가 생기면 교체할 수 있어야 완료된 작업에서도 대화를 계속할 수 있다.
   const terminal = ["done", "failed", "timeout"].includes(task.status);
   // A null active profile on an exhausted, non-empty chain is a persisted end
   // cursor. Keep the status display honest; choosing the first profile is only

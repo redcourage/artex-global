@@ -5,9 +5,9 @@ import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 import type { Agent } from "@/lib/types";
 
-// 기본 에이전트(builtin)의 이름·설명·프롬프트 변수 라벨은 DB 시드 데이터라
-// 중국어로만 들어 있다(db/db.go 의 builtinAgents, server/finding_retests.go 의
-// 漏洞复测 에이전트). DB 값을 언어별로 둘 수 없고 시드가 ON CONFLICT DO NOTHING 이라
+// 기본 에이전트(builtin)의 이름·설명·프롬프트 변수 라벨은 DB 시드 데이터이며
+// 기존 설치 DB에는 중국어 시드가 남아 있을 수 있다(db/db.go의 builtinAgents, server/finding_retests.go의
+// 취약점 재검증 에이전트). DB 값을 언어별로 둘 수 없고 시드가 ON CONFLICT DO NOTHING 이라
 // 이미 설치된 인스턴스에는 반영되지도 않으므로, 화면에서는 key 로 메시지 파일
 // (web/messages/{ko,en,zh,es,ja}.json 의 builtinAgents 네임스페이스)에서 번역을 찾아
 // 보여 주고, 없으면 DB 값을 그대로 쓴다. 사용자가 만든 에이전트는 항상 DB 값.
@@ -53,7 +53,7 @@ export function useAgentLabels() {
       return (agent && name(agent)) || key;
     };
 
-    // varLabel 은 기본 에이전트의 프롬프트 변수 라벨(예: goals 의 "任务总目标")을
+    // varLabel은 기본 에이전트의 프롬프트 변수 라벨(예: goals의 작업 전체 목표)을
     // 번역한다. 없으면 DB 라벨(fallback)을 그대로 쓴다.
     const varLabel = (agentKey: string, builtin: boolean, varName: string, fallback: string): string => {
       if ((builtin || SYSTEM_SEEDED_AGENT_KEYS.has(agentKey)) && t.has(`${agentKey}.vars.${varName}`)) {

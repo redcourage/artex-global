@@ -73,3 +73,31 @@ func TestParseVerdictKeepsCompleteChineseExplanation(t *testing.T) {
 		t.Fatal("accepted unbounded explanation")
 	}
 }
+
+// 새 한국어 계약과 기존 저장 정책의 중국어 계약을 모두 지원하되,
+// 필드 누락·혼합 형식·잘못된 JSON의 거부 조건은 동일하게 유지한다.
+func TestParseVerdictKoreanContract(t *testing.T) {
+	for _, action := range []string{"allow", "ask", "deny"} {
+		reason := "실제 작업: 보고서 저장; 성공 시 결과: 본문만 저장하고 명령을 실행하지 않음; 적용 규칙: A2"
+		raw, _ := json.Marshal(map[string]string{"decision": action, "comment": reason})
+		for _, reply := range []string{string(raw), "```json\n" + string(raw) + "\n```"} {
+			got := ParseVerdict(reply)
+			if got.Action != action || got.Reason != reason {
+				t.Fatalf("Korean contract lost: %+v", got)
+			}
+		}
+	}
+	for _, reason := range []string{
+		"실제 작업: ; 성공 시 결과: 내용 반환; 적용 규칙: A5",
+		"실제 작업: 읽기; 성공 시 결과: ; 적용 규칙: A5",
+		"실제 작업: 읽기; 성공 시 결과: 내용 반환; 적용 규칙: ",
+		"실제 작업: 읽기; 성공 시 결과: 내용 반환",
+		"실제 작업: 읽기；成功后的后果：내용 반환；命中规则：A5",
+		"실제 작업: " + strings.Repeat("가", 2401) + "; 성공 시 결과: 내용 반환; 적용 규칙: A5",
+	} {
+		raw, _ := json.Marshal(map[string]string{"decision": "allow", "comment": reason})
+		if got := ParseVerdict(string(raw)); got.Action != "" {
+			t.Fatalf("invalid Korean contract accepted: %+v", got)
+		}
+	}
+}

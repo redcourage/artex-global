@@ -14,28 +14,28 @@ import (
 	"time"
 )
 
-// emailDialTimeout / emailSessionTimeout 分别约束建连与整段 SMTP 会话。
-// net/smtp 自身没有任何超时机制，不设这两道的话，一个卡住的对端会让
-// 投递 goroutine 永久挂在那里——而 dispatcher 是单 goroutine 串行处理的，
-// 等于整个通知系统停摆。
+// emailDialTimeout/emailSessionTimeout은 각각 연결과 전체 SMTP 세션을 제한한다.
+// net/smtp 자체에는 시간 제한이 없어 멈춘 상대가 발송 goroutine을
+// 영구 대기시킬 수 있다. dispatcher는 단일 goroutine의 직렬 처리이므로
+// 전체 알림 시스템이 멈추는 셈이다.
 const (
 	emailDialTimeout    = 10 * time.Second
 	emailSessionTimeout = 45 * time.Second
 )
 
-// emailChannel 实现 SMTP 邮件投递。
+// emailChannel은 SMTP 이메일 발송을 구현한다.
 type emailChannel struct{}
 
 func (emailChannel) Kind() string { return KindEmail }
 
-// 邮件没有平台限流，但不该用它刷屏；给一个宽松的默认值。
+// 플랫폼 제한은 없지만 과도한 발송을 피하도록 여유 있는 기본 한도를 둔다.
 func (emailChannel) DefaultRatePerMin() int { return 60 }
 
-// 只掩码密码。SMTP 主机、账号、收件人都不算秘密，掩码它们只会让编辑变麻烦。
+// 비밀번호만 마스킹한다. 호스트/계정/수신자는 비밀이 아니며 마스킹하면 편집이 어려워진다.
 func (emailChannel) SecretKeys() []string { return []string{"password"} }
 
-// host/port 决定把密码交给哪台服务器；tls 决定是否加密传输。三者任一变化都
-// 要求重新表态密码——顺带让「关掉 TLS」这一步必须显式带上凭据，而不是顺手一改。
+// host/port는 비밀번호를 전달할 서버, tls는 전송 암호화를 결정한다. 하나라도 바뀌면
+// 비밀번호를 다시 명시해야 하므로 TLS 끄기도 자격 증명을 명시한 변경이 된다.
 func (emailChannel) DestinationKeys() []string { return []string{"host", "port", "tls"} }
 
 func (emailChannel) Validate(cfg map[string]any) error {
@@ -79,7 +79,7 @@ func (c emailChannel) Send(ctx context.Context, cfg map[string]any, m Message) (
 	}
 	defer client.Close()
 
-	// STARTTLS：对端支持就升级。明文会话下不能发凭据（见下面的 auth 说明）。
+	// 상대가 STARTTLS를 지원하면 업그레이드한다. 평문 세션에서는 자격 증명을 보내면 안 된다(아래 auth 참조).
 	if !implicitTLS {
 		if ok, _ := client.Extension("STARTTLS"); ok {
 			if err := client.StartTLS(&tls.Config{ServerName: host, MinVersion: tls.VersionTLS12}); err != nil {
@@ -89,9 +89,9 @@ func (c emailChannel) Send(ctx context.Context, cfg map[string]any, m Message) (
 	}
 	if username != "" {
 		if err := client.Auth(smtp.PlainAuth("", username, password, host)); err != nil {
-			// smtp.PlainAuth 会拒绝在未加密连接上发送凭据（除非目标是 localhost）。
-			// 这是**正确**的安全行为，不能绕过，但需要把原因翻译清楚——
-			// 否则使用者只会看到「unencrypted connection」而不知道该怎么办。
+			// smtp.PlainAuth는 localhost 외 비암호화 연결의 자격 증명 전송을 거부한다.
+			// 올바른 보안 동작이므로 우회하지 않되 이유를 명확히 설명해야 한다.
+			// 그렇지 않으면 사용자는 unencrypted connection만 보고 대응 방법을 알 수 없다.
 			if strings.Contains(err.Error(), "unencrypted connection") {
 				return 0, Permanent(fmt.Errorf("자격 증명 전송을 거부했습니다: 연결이 암호화되지 않았습니다. TLS 를 켜거나, 465 포트(암시적 TLS)를 사용하거나, 「TLS 사용」을 체크하세요 (%w)", err))
 			}
@@ -116,25 +116,25 @@ func (c emailChannel) Send(ctx context.Context, cfg map[string]any, m Message) (
 	if err := w.Close(); err != nil {
 		return 0, fmt.Errorf("메일 제출 실패: %w", err)
 	}
-	// Quit 失败不影响「邮件已被服务器接收」这个事实，因此忽略其错误。
+	// Quit 실패는 서버의 메일 수신 사실을 바꾸지 않으므로 무시한다.
 	_ = client.Quit()
-	// 邮件没有长度截断（HTML 正文全部发送），整批都算送达。
+	// 메일은 HTML 전체를 보내며 길이 자르기가 없어 전체 묶음이 전달된다.
 	return len(m.Items), nil
 }
 
-// emailDial 建立 SMTP 连接。
+// emailDial은 SMTP 연결을 생성한다.
 //
-// implicitTLS=true 走 465 这类「连上即 TLS」的方式；false 走 25/587 明文建连后再
-// STARTTLS。两者不能混：对 465 端口发明文 greeting 会被直接断开。
+// implicitTLS=true는 465 같은 즉시 TLS 방식, false는 25/587 평문 연결 후
+// STARTTLS다. 465에 평문 greeting을 보내면 바로 끊기므로 혼용하면 안 된다.
 //
-// 会话期限在**建连处**就设好（而非事后补设），因为 net/smtp 的 Client 把底层
-// 连接藏在未导出字段里，外部拿不到它；连接一旦交出去就只能靠预先设置的 deadline
-// 兜底。这也顺带覆盖了握手阶段的阻塞。
-// Control 挂 blockInternalDial 与 HTTP 系渠道共用同一道守卫。不挂的话 SMTP
-// 就是整套 SSRF 防护的缺口：host 填 169.254.169.254 或 127.0.0.1 能直接连上，
-// 而 smtp.NewClient 握手失败时会把对端返回的那一行包进错误、经 last_error
-// 由投递历史接口回显，构成半盲读原语；「连接被拒 vs 超时」的耗时差异还能
-// 用来探测端口。拨号阶段是最终生效点，也覆盖 DNS 重绑定。
+// net/smtp Client가 연결을 비공개 필드에 숨기므로 연결 시점에 세션 deadline을
+// 설정해야 한다. 넘긴 뒤에는 외부에서 접근할 수 없어 미리 설정한 제한에
+// 의존하며 이는 핸드셰이크 중 멈춤도 포함한다.
+// Control에 blockInternalDial을 연결해 HTTP 채널과 가드를 공유한다. 없으면 SMTP가
+// SSRF 보호의 빈틈이 되어 169.254.169.254나 127.0.0.1에 직접 연결할 수 있다.
+// smtp.NewClient 핸드셰이크 오류가 상대 응답 행을 담아 last_error와
+// 발송 이력에 노출할 수 있고 연결 거부/시간 초과의 시간 차이로 포트 탐지도 가능하다.
+// 연결 단계는 최종 적용 지점으로 DNS 리바인딩도 처리한다.
 func emailDial(ctx context.Context, addr, host string, implicitTLS bool) (*smtp.Client, error) {
 	d := &net.Dialer{Timeout: emailDialTimeout, Control: blockInternalDial}
 	var conn net.Conn
@@ -156,17 +156,17 @@ func emailDial(ctx context.Context, addr, host string, implicitTLS bool) (*smtp.
 	return client, nil
 }
 
-// smtpStageError 按 SMTP 应答码把某个阶段的失败分成「可重试」与「永久失败」。
+// smtpStageError는 SMTP 응답 코드로 단계 실패를 재시도 가능/영구 실패로 분류한다.
 //
-// 为什么必须区分：SMTP 的 4xx 与 5xx 语义完全不同——
-//   - 4xx（450 灰名单、451 本地错误、452 存储不足）是**临时**拒绝，
-//     正规做法是稍后重试；尤其是灰名单，几乎每次首次投递都会遇到。
-//   - 5xx（550 用户不存在、553 地址非法）是永久拒绝，重试没有意义。
+// SMTP 4xx와 5xx는 의미가 다르므로 구분해야 한다.
+//   - 4xx(450 그레이리스트/451 로컬 오류/452 저장 공간 부족)는 임시 거부이며
+//     나중에 재시도하는 것이 정상이다. 그레이리스트는 첫 발송 때 특히 흔하다.
+//   - 5xx(550 사용자 없음/553 잘못된 주소)는 영구 거부라 재시도할 의미가 없다.
 //
-// 若一律判永久失败，一个启用灰名单的邮件服务器会让**每一条**推送都在第一次
-// 尝试后落入 failed——而这类失败恰恰是自动重试最该发挥作用的场景。
-// 应答码取错误文本的前三位数字；取不到码时按可重试处理（宁可多试一次，
-// 也不要因为解析不出就把可能的瞬时故障判死）。
+// 모두 영구 실패로 보면 그레이리스트 서버의 모든 알림이 첫 시도 후 failed가 된다.
+// 이런 실패야말로 자동 재시도가 필요한 상황이다.
+// 오류 문구의 앞 세 자리 숫자를 응답 코드로 사용하며 없으면 재시도 가능으로 처리해
+// 해석 불가를 이유로 순간 장애를 영구 실패로 확정하지 않는다.
 func smtpStageError(what string, err error) error {
 	code := smtpReplyCode(err.Error())
 	if code >= 500 && code < 600 {
@@ -175,8 +175,8 @@ func smtpStageError(what string, err error) error {
 	return fmt.Errorf("%s: %w", what, err)
 }
 
-// smtpReplyCode 从 SMTP 错误文本里取前导的三位应答码，取不到返回 0。
-// net/smtp 不导出错误码字段，只能从文本里取；格式为「450 4.7.1 ...」。
+// smtpReplyCode는 오류 문구 앞의 세 자리 코드를 읽고 없으면 0을 반환한다.
+// net/smtp는 코드 필드를 공개하지 않아 "450 4.7.1 ..." 형식의 텍스트에서 읽는다.
 func smtpReplyCode(text string) int {
 	if len(text) < 3 {
 		return 0
@@ -188,24 +188,24 @@ func smtpReplyCode(text string) int {
 	return n
 }
 
-// buildEmailMessage 组装完整的 RFC 5322 邮件。
+// buildEmailMessage는 전체 RFC 5322 메일을 구성한다.
 //
-// 正文用 base64 编码有两个原因：一是 SMTP 规定单行不超过 1000 字节，而 HTML
-// 正文（尤其汇总邮件）很容易出现超长行；二是 base64 天然不会出现以 "." 开头
-// 的行，省去 SMTP 点号转义的麻烦。
+// 본문 base64 이유: SMTP 행 제한 1000바이트를 HTML, 특히 요약 메일이 쉽게 넘기며
+// base64에는 "."로 시작하는 행이 생기지 않아
+// SMTP 점 이스케이프도 피할 수 있다.
 func buildEmailMessage(from string, to []string, m Message) (string, error) {
 	var b strings.Builder
 	fmt.Fprintf(&b, "From: %s\r\n", from)
 	fmt.Fprintf(&b, "To: %s\r\n", strings.Join(to, ", "))
-	// 中文主题必须做 RFC 2047 编码，否则会被客户端显示成乱码。
+	// 중국어 제목은 RFC 2047로 인코딩해야 클라이언트에서 깨지지 않는다.
 	fmt.Fprintf(&b, "Subject: %s\r\n", mime.QEncoding.Encode("utf-8", htmlTitle(m)))
 	b.WriteString("MIME-Version: 1.0\r\n")
 	b.WriteString("Content-Type: text/html; charset=\"UTF-8\"\r\n")
 	b.WriteString("Content-Transfer-Encoding: base64\r\n")
-	// 邮件没有长度硬上限，因此不截断正文。
+	// 메일에는 길이 상한이 없어 본문을 자르지 않는다.
 	b.WriteString("\r\n")
 	encoded := base64.StdEncoding.EncodeToString([]byte(htmlBody(m, 0)))
-	// base64 按 76 字符折行，符合 RFC 2045。
+	// base64는 RFC 2045에 따라 76문자마다 줄바꿈한다.
 	for len(encoded) > 76 {
 		b.WriteString(encoded[:76] + "\r\n")
 		encoded = encoded[76:]

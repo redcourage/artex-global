@@ -8,7 +8,7 @@ import (
 	actool "github.com/Autumn-27/norma/tool"
 )
 
-const findingIDGuidance = "\n\n**漏洞编号约定**：finding_id 是独立漏洞记录 ID；finding_node_id 是探索节点 ID。list_findings / list_task_findings / node_detail / get_task_node_detail 的 id 保留为探索节点 ID，应从同一返回的 finding_id 读取独立编号。get_finding_traffic / bind_finding_traffic 用独立 finding_id。旧 update_finding_report 的 finding_id 参数仍传 finding_node_id。不要把 report_finding 第一行的数字用于证据工具，也不要遇到编号错误后猜测其他数字。"
+const findingIDGuidance = "\n\n**취약점 번호 규약**: finding_id는 독립 취약점 기록 ID이며 finding_node_id는 탐색 노드 ID다. list_findings / list_task_findings / node_detail / get_task_node_detail의 id는 탐색 노드 ID로 유지된다. 독립 번호는 같은 반환값의 finding_id에서 읽는다. get_finding_traffic / bind_finding_traffic은 독립 finding_id를 사용한다. 기존 update_finding_report의 finding_id 매개변수에는 여전히 finding_node_id를 전달한다. report_finding 첫 줄의 숫자를 증거 도구에 사용하거나 번호 오류 후 다른 숫자를 추측하지 않는다."
 
 // The server supplies the persisted setting. A missing setting/host is off.
 // Consulted at assembly and again on writes so an already-running session
@@ -53,9 +53,9 @@ func findingWorkflowTools(agentKey string, tools []actool.CoreTool) ([]actool.Co
 		note := ""
 		switch tool.Name() {
 		case "report_finding":
-			note = "\n默认由报告 Agent 在编写报告前核对并绑定流量。上报者在 evidence 中保留验证命令、关键输出、已有的真实流量 ID 及其用途，供报告 Agent 对照执行记录核实；无需为绑定额外查包。兼容显式即时绑定：traffic_refs 或 evidence_hint_id 可提交已核实的引用，后者读取本任务指定 hint 的结构化引用；任一无效则本次上报全部失败。TCP/无包不需要这些可选参数。返回 finding_id 与 finding_node_id 分别表示独立记录和探索节点。"
+			note = "\n기본적으로 보고서 Agent가 보고서 작성 전에 트래픽을 확인하고 연결한다. 보고자는 evidence에 검증 명령, 주요 출력, 기존 실제 트래픽 ID와 용도를 보존하여 보고서 Agent가 실행 기록과 대조하도록 한다. 연결을 위해 추가로 패킷을 조회할 필요 없다. 명시적 즉시 연결도 호환된다. traffic_refs 또는 evidence_hint_id로 확인된 참조를 제출할 수 있으며 후자는 이 작업의 지정 hint에서 구조화 참조를 읽는다. 하나라도 유효하지 않으면 이번 보고 전체가 실패한다. TCP/패킷 없음에는 이 선택 매개변수가 필요 없다. 반환값 finding_id와 finding_node_id는 각각 독립 기록과 탐색 노드를 뜻한다."
 		case "add_hint", "add_task_hint":
-			note = "\n交接已确认漏洞时，在对应提示的 traffic_refs 中保留已核实流量的 ID、用途、说明和顺序（单条放顶层，批量放对应 hints 元素），并在 text 中说明它证明的具体漏洞。调用方不能只交接文字而丢弃已有流量引用。未核实的候选不能作为证据传递。"
+			note = "\n확인된 취약점을 인계할 때 해당 힌트의 traffic_refs에 검증된 트래픽의 ID, 용도, 설명, 순서를 보존한다(단일 항목은 최상위, 일괄은 대응 hints 요소에 기록). text에는 어떤 구체적 취약점을 입증하는지 설명한다. 호출자는 텍스트만 인계하며 기존 트래픽 참조를 버려서는 안 된다. 확인하지 않은 후보는 증거로 전달할 수 없다."
 		case "get_finding_traffic", "bind_finding_traffic", "list_findings", "list_task_findings", "node_detail", "get_task_node_detail", "update_finding_report":
 			note = findingIDGuidance
 		}
@@ -65,16 +65,16 @@ func findingWorkflowTools(agentKey string, tools []actool.CoreTool) ([]actool.Co
 	}
 	guidance := ""
 	if has["report_finding"] || has["add_task_hint"] || has["add_hint"] {
-		guidance = "\n\n**流量证据交接（可选）**：自动绑定默认由报告 Agent 在漏洞入库后、编写报告前完成。上报者应在 evidence 保留验证命令、关键输出、已有真实流量 ID 及其用途，任务中带 intent_id，便于报告 Agent 追溯；不必为了绑定额外查包。Auto / Planner 代为上报时不要丢弃执行者已有的引用。add_hint / add_task_hint 可用 traffic_refs 交接；显式即时绑定仍兼容 report_finding 的 traffic_refs / evidence_hint_id。TCP 或无包时正常登记，不能猜测 ID，也不能仅为补包重复探测。"
+		guidance = "\n\n**트래픽 증거 인계(선택)**: 자동 연결은 기본적으로 취약점 저장 후 보고서 작성 전에 보고서 Agent가 수행한다. 보고자는 evidence에 검증 명령, 주요 출력, 기존 실제 트래픽 ID와 용도를 보존하고 작업에서는 intent_id를 포함하여 추적할 수 있게 한다. 연결을 위해 추가로 패킷을 조회할 필요 없다. Auto / Planner가 대신 보고할 때 실행자의 기존 참조를 버리지 않는다. add_hint / add_task_hint는 traffic_refs로 인계할 수 있다. report_finding의 traffic_refs / evidence_hint_id를 통한 명시적 즉시 연결도 계속 지원한다. TCP 또는 패킷 없음이면 정상 등록하며 ID를 추측하거나 패킷 보충만을 위해 반복 탐지하지 않는다."
 		if has["add_task_hint"] && !has["add_hint"] {
-			guidance += "\n平台对话没有任务上下文时，不直接调用 report_finding；通过 add_task_hint 向已有对应任务交接，由任务 Agent 登记，并用 list_task_findings 核对结果。"
+			guidance += "\n플랫폼 대화에 작업 문맥이 없으면 report_finding을 직접 호출하지 않는다. add_task_hint로 기존의 해당 작업에 인계하여 작업 Agent가 등록하게 하고 list_task_findings로 결과를 확인한다."
 		}
 		if has["prove_goal"] || has["goal_met"] {
-			guidance += "\n判定目标完成前，先完成本次已有证据的上报/交接。不要在证据交接尚未完成时仅因文字漏洞已登记就结束任务、取消 Worker；无包不要求等待或强行抓包。"
+			guidance += "\n목표 완료 판단 전에 이번에 확보한 증거의 보고/인계를 먼저 완료한다. 증거 인계가 끝나지 않았는데 텍스트 취약점이 등록되었다는 이유만으로 작업을 종료하거나 Worker를 취소하지 않는다. 패킷이 없으면 기다리거나 억지로 캡처할 필요 없다."
 		}
 	}
 	if has["update_finding_report"] && has["bind_finding_traffic"] && has["get_finding_traffic"] {
-		guidance += "\n\n**报告前自动关联流量（已开启）**：你负责为本次触发的漏洞核对并绑定流量，再撰写报告。先从 report_finding 返回 JSON 或 get_task_node_detail / list_task_findings 取得明确的 finding_id 与 finding_node_id。读取漏洞详情、对应意图的执行记录及已有证据清单，优先使用上报者交接的真实 ID。若本次验证为 HTTP 且流量工具可用，用 traffic_search 筛选候选，再用 traffic_get 逐条核实请求/响应确实支持该漏洞；域名和时间只用于筛选，不证明归属。将确认的证据按复现顺序用 bind_finding_traffic(finding_id, traffic_refs) 关联，选择 baseline / proof / verification / supporting 并说明用途。只能操作本次漏洞，不重复创建漏洞或重新探测目标。绑定成功后重新调用 get_finding_traffic 获取最新 version，读取所需正文，再将实际读取的 version 作为 evidence_version 传给 update_finding_report（其 finding_id 参数仍用 finding_node_id）。已有绑定不必重复追加。TCP、未采集、工具不可用或没有确切匹配时，跳过自动绑定，依据文字/命令证据正常写报告并说明原因，不得为凑齐流量而猜测。绑定失败不宣称成功；保留已有证据并在报告说明未绑定原因。"
+		guidance += "\n\n**보고서 작성 전 자동 트래픽 연결(활성화됨)**: 이번에 유발된 취약점의 트래픽을 확인하고 연결한 뒤 보고서를 작성한다. 먼저 report_finding 반환 JSON 또는 get_task_node_detail / list_task_findings에서 명확한 finding_id와 finding_node_id를 얻는다. 취약점 상세, 해당 의도 실행 기록, 기존 증거 목록을 읽고 보고자가 인계한 실제 ID를 우선 사용한다. 이번 검증이 HTTP이고 트래픽 도구를 사용할 수 있으면 traffic_search로 후보를 선별한 뒤 traffic_get으로 각 요청/응답이 취약점을 실제로 뒷받침하는지 확인한다. 도메인과 시간은 선별용일 뿐 귀속을 입증하지 않는다. 확인한 증거를 재현 순서대로 bind_finding_traffic(finding_id, traffic_refs)로 연결하고 baseline / proof / verification / supporting을 선택하여 용도를 설명한다. 이번 취약점만 다루며 중복 생성하거나 대상을 다시 탐지하지 않는다. 연결에 성공하면 get_finding_traffic을 다시 호출해 최신 version을 얻고 필요한 본문을 읽는다. 실제로 읽은 version을 evidence_version으로 update_finding_report에 전달한다(그 finding_id 매개변수는 여전히 finding_node_id 사용). 기존 연결을 중복 추가할 필요 없다. TCP, 미수집, 도구 사용 불가 또는 정확한 일치가 없으면 자동 연결을 건너뛰고 텍스트/명령 증거로 정상 작성하며 이유를 설명한다. 트래픽을 채우려고 추측해서는 안 된다. 연결 실패를 성공으로 주장하지 않는다. 기존 증거를 보존하고 보고서에 미연결 이유를 설명한다."
 	}
 	if guidance != "" || has["get_finding_traffic"] || has["update_finding_report"] {
 		guidance += findingIDGuidance
@@ -104,7 +104,7 @@ func stripTrafficParameters(schema map[string]any) {
 
 // HintTrafficSchema is shared by the task-local and cross-task hint tools.
 func HintTrafficSchema() map[string]any {
-	return map[string]any{"type": "array", "description": "可选：已核实且对应本提示中具体漏洞的流量引用，保留顺序；交接后 report_finding 可传 evidence_hint_id 携带这些引用。", "items": obj(map[string]any{"traffic_id": str("真实流量 ID"), "role": str("baseline / proof / verification / supporting"), "note": str("该流量支持什么结论")}, "traffic_id")}
+	return map[string]any{"type": "array", "description": "선택: 확인되었고 이 힌트의 구체적 취약점에 해당하는 트래픽 참조. 순서를 보존한다. 인계 후 report_finding에 evidence_hint_id를 전달해 이 참조를 포함할 수 있다.", "items": obj(map[string]any{"traffic_id": str("실제 트래픽 ID"), "role": str("baseline / proof / verification / supporting"), "note": str("이 트래픽이 뒷받침하는 결론")}, "traffic_id")}
 }
 
 func (t *ToolSet) findingRefsFromHint(hintID int64, explicit []db.TrafficRef) ([]db.TrafficRef, error) {
@@ -116,7 +116,7 @@ func (t *ToolSet) findingRefsFromHint(hintID int64, explicit []db.TrafficRef) ([
 		return nil, err
 	}
 	if n == nil || n.Kind != db.KindHint {
-		return nil, fmt.Errorf("evidence_hint_id=%d 必须是本任务的提示节点（继承提示不可直接用于绑定）", hintID)
+		return nil, fmt.Errorf("evidence_hint_id=%d는 이 작업의 힌트 노드여야 한다(상속 힌트는 직접 연결에 사용할 수 없음)", hintID)
 	}
 	var payload struct {
 		Refs []db.TrafficRef `json:"traffic_refs"`

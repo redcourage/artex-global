@@ -24,29 +24,29 @@ type DBFinding struct {
 	TaskID          *int64
 	NodeID          *int64
 	VulnClass       string
-	Name            string // 漏洞名称(可读标题);为空时前端回退展示 VulnClass
+	Name            string // 취약점 이름(읽기 쉬운 제목). 빈 값이면 프런트엔드에서 VulnClass 표시
 	Severity        string
 	Summary         string
 	Evidence        string
 	Worker          string
 	AssetIDs        []int64
 	Status          string
-	Report          string // 详细报告(Markdown);仅 GetFinding 填充,列表查询不带
+	Report          string // 상세 보고서(Markdown). GetFinding만 채우며 목록 조회에는 제외
 	CreatedAt       time.Time
 	TaskDescription string // populated via LEFT JOIN on tasks
 }
 
 // Finding triage states (findings.status).
 const (
-	FindingPending       = "pending"        // 待处理
-	FindingInProgress    = "in_progress"    // 处理中
-	FindingConfirmed     = "confirmed"      // 已确认(真实漏洞,未修复)
-	FindingResolved      = "resolved"       // 已处理
-	FindingFixed         = "fixed"          // 已修复
-	FindingFalsePositive = "false_positive" // 误报
-	FindingIgnored       = "ignored"        // 忽略
-	FindingDuplicate     = "duplicate"      // 重复
-	FindingRiskAccepted  = "risk_accepted"  // 风险接受
+	FindingPending       = "pending"        // 처리 대기
+	FindingInProgress    = "in_progress"    // 처리 중
+	FindingConfirmed     = "confirmed"      // 확인됨(실제 취약점, 미수정)
+	FindingResolved      = "resolved"       // 처리됨
+	FindingFixed         = "fixed"          // 수정 완료
+	FindingFalsePositive = "false_positive" // 오탐
+	FindingIgnored       = "ignored"        // 무시
+	FindingDuplicate     = "duplicate"      // 중복
+	FindingRiskAccepted  = "risk_accepted"  // 위험 수용
 )
 
 // ValidFindingStatus reports whether s is a known triage state.
@@ -61,10 +61,10 @@ func ValidFindingStatus(s string) bool {
 
 // Finding severity levels (findings.severity).
 const (
-	SeverityCritical = "critical" // 严重
-	SeverityHigh     = "high"     // 高
-	SeverityMedium   = "medium"   // 中
-	SeverityLow      = "low"      // 低
+	SeverityCritical = "critical" // 치명적
+	SeverityHigh     = "high"     // 높음
+	SeverityMedium   = "medium"   // 중간
+	SeverityLow      = "low"      // 낮음
 )
 
 // ValidSeverity reports whether s is a known severity level.
@@ -128,7 +128,7 @@ func scanFindings(rows interface {
 }
 
 // ListFindings returns all findings (newest first), joined with task description.
-// Kept for the dashboard's summary; the paginated 发现 page uses ListFindingsPage.
+// 대시보드 요약용으로 유지합니다. 페이지로 나누는 취약점 화면은 ListFindingsPage를 사용합니다.
 func (d *DB) ListFindings(limit int) ([]*DBFinding, error) {
 	if limit <= 0 {
 		limit = 500
@@ -153,17 +153,16 @@ type FindingFilter struct {
 	Severity  string // high | medium | low
 	Status    string // pending | false_positive | ignored | resolved
 	VulnClass string
-	TaskID    string // 任务 id(字符串形式;空/非法 = 不按任务筛选)
-	Query     string // 名称/类型/摘要/证据/报告正文的模糊检索关键词
+	TaskID    string // 작업 id(문자열). 비었거나 잘못되면 작업별 필터 미적용
+	Query     string // 이름/유형/요약/증거/보고서 본문 부분 검색 키워드
 	Sort      string // "severity" | "time"
-	// AssetScope 是资产树的节点 key(a:<id> / c:<id> / r:<domain> / __none__),
-	// 选中一个节点等于选中它的整棵子树。空 = 不按资产筛选。
+	// AssetScope는 자산 트리 노드 key(a:<id> / c:<id> / r:<domain> / __none__)입니다. 노드 하나를 선택하면 하위 트리 전체를 선택합니다. 빈 값이면 자산 필터 미적용.
 	AssetScope string
 
-	// 下面三个由 applyAssetScope 从 AssetScope 解析而来,调用方不用设置。
-	assetIDs  []int64 // 子树里所有资产 id
-	assetNone bool    // 只要「未关联资产」的发现
-	assetMiss bool    // 选中的节点在当前筛选下不存在 → 结果恒空
+	// 아래 세 값은 applyAssetScope가 AssetScope에서 해석하며 호출자는 설정하지 않습니다.
+	assetIDs  []int64 // 하위 트리의 모든 자산 id
+	assetNone bool    // 연결된 자산이 없는 취약점만 선택
+	assetMiss bool    // 선택한 노드가 현재 필터에 없음 → 항상 빈 결과
 }
 
 // FindingUnassignedTask is the task filter sentinel for findings whose task is
@@ -187,21 +186,19 @@ func (f FindingFilter) where() (string, []any) {
 	add("severity", f.Severity)
 	add("status", f.Status)
 	add("vulnclass", f.VulnClass)
-	// task_id 是 bigint 列,按整数比较(不能走上面的文本 add);空/非法值忽略。
+	// task_id는 bigint이므로 위의 텍스트 add 대신 정수로 비교합니다. 빈 값이나 잘못된 값은 무시합니다.
 	if f.TaskID == FindingUnassignedTask {
 		conds = append(conds, "(f.task_id IS NULL OR t.id IS NULL)")
 	} else if tid, err := strconv.ParseInt(f.TaskID, 10, 64); err == nil && tid > 0 {
 		args = append(args, tid)
 		conds = append(conds, fmt.Sprintf("f.task_id = $%d", len(args)))
 	}
-	// 资产筛选:asset_ids 是 jsonb 数组,@> ANY(...) 能走 idx_findings_asset_ids。
+	// 자산 필터: asset_ids는 jsonb 배열이며 @> ANY(...)가 idx_findings_asset_ids를 사용할 수 있습니다.
 	switch {
 	case f.assetMiss:
 		conds = append(conds, "FALSE")
 	case f.assetNone:
-		// 「未关联资产」= asset_ids 为空,或者里面的 id 一个都不在 assets 表里
-		// (资产已被删除)。两类都进资产树的未关联桶,这里必须同样收下,否则桶上
-		// 的计数会大于点开后能查到的条数。
+		// 미연결은 asset_ids가 비었거나 모든 ID가 assets에서 삭제된 경우입니다. 두 경우 모두 트리의 미연결 집계에 포함되므로 조회에도 포함해야 집계 수와 실제 목록 수가 일치합니다.
 		conds = append(conds, `(
 			jsonb_array_length(COALESCE(f.asset_ids, '[]'::jsonb)) = 0
 			OR NOT EXISTS (
@@ -258,7 +255,7 @@ func (d *DB) ListFindingsPage(f FindingFilter, page, pageSize int) ([]*DBFinding
 
 	order := "f.created_at DESC, f.id DESC"
 	if f.Sort == "severity" {
-		// critical > high > medium > low > 其它, then newest first.
+		// critical > high > medium > low > 기타 순서이며 이후 최신순입니다.
 		order = `CASE f.severity WHEN 'critical' THEN 4 WHEN 'high' THEN 3 WHEN 'medium' THEN 2 WHEN 'low' THEN 1 ELSE 0 END DESC, f.created_at DESC, f.id DESC`
 	}
 	pageArgs := append(append([]any{}, args...), pageSize, (page-1)*pageSize)
@@ -282,7 +279,7 @@ func (d *DB) ListFindingsPage(f FindingFilter, page, pageSize int) ([]*DBFinding
 // deletion; those records intentionally share one "unassigned/deleted" bucket.
 type FindingGroup struct {
 	TaskID          *int64    `json:"task_id"`
-	TaskName        string    `json:"task_name"` // 可选任务名称;空=未命名
+	TaskName        string    `json:"task_name"` // 선택적 작업 이름. 빈 값이면 이름 없음
 	TaskDescription string    `json:"task_description"`
 	TaskStatus      string    `json:"task_status"`
 	Count           int       `json:"count"`
@@ -465,10 +462,8 @@ RETURNING id, created_at`, s.expID, audit.NodeID, utf8Clean(audit.Worker), utf8C
 	return intentID, audit, nil
 }
 
-// ListFindingsForExport returns findings for the 发现 page 导出功能，携带完整
-// report 字段、不分页。ids 非空时按这批 finding id 精确导出(勾选导出),忽略
-// filter;ids 为空时按 filter 导出(导出当前筛选/全部)。结果按严重等级降序、
-// 再按时间倒序,与「导出汇总报告」的分组顺序一致。
+// ListFindingsForExport는 취약점 페이지 내보내기용으로 전체 report 필드를 포함하며 페이지를 나누지 않습니다.
+// ids가 있으면 filter를 무시하고 선택한 ID만 내보내며 없으면 filter로 현재 검색/전체를 내보냅니다. 심각도 내림차순, 시간 내림차순으로 정렬하여 요약 보고서 내보내기의 그룹 순서와 맞춥니다.
 func (d *DB) ListFindingsForExport(f FindingFilter, ids []int64) ([]*DBFinding, error) {
 	const order = `ORDER BY CASE f.severity WHEN 'critical' THEN 4 WHEN 'high' THEN 3 WHEN 'medium' THEN 2 WHEN 'low' THEN 1 ELSE 0 END DESC, f.created_at DESC`
 	cols := findingSelectCols + `, COALESCE(f.report, '')`
@@ -520,7 +515,7 @@ func (d *DB) ListFindingsForExport(f FindingFilter, ids []int64) ([]*DBFinding, 
 	return out, rows.Err()
 }
 
-// FindingStats is the whole-table aggregate powering the 发现 page's stat cards
+// FindingStats는 취약점 페이지 통계 카드에 사용하는 전체 테이블 집계입니다.
 // and vuln-class filter — computed server-side so it stays exact regardless of
 // pagination.
 type FindingStats struct {
@@ -531,16 +526,16 @@ type FindingStats struct {
 	Medium      int                 `json:"medium"`
 	Low         int                 `json:"low"`
 	VulnClasses []string            `json:"vulnclasses"`
-	Tasks       []FindingTaskOption `json:"tasks"` // 有漏洞的任务(供「按任务」下拉)
+	Tasks       []FindingTaskOption `json:"tasks"` // 취약점이 있는 작업(작업별 드롭다운용)
 }
 
-// FindingTaskOption is one entry in the 发现 page's 任务 filter: a task that has at
+// FindingTaskOption은 취약점 페이지의 작업 필터 항목이며 다음 조건의 작업입니다:
 // least one finding, with its description and finding count. Description is empty when
 // the task has since been deleted (finding rows persist), so the frontend falls back to
 // the id.
 type FindingTaskOption struct {
 	ID          int64  `json:"id"`
-	Name        string `json:"name"` // 可选任务名称;空=未命名
+	Name        string `json:"name"` // 선택적 작업 이름. 빈 값이면 이름 없음
 	Description string `json:"description"`
 	Count       int    `json:"count"`
 }
@@ -576,7 +571,7 @@ func (d *DB) FindingStats() (*FindingStats, error) {
 		return nil, err
 	}
 
-	// 任务下拉:有漏洞的任务,带描述(任务删除后为空,前端回退 id)和条数,最新有漏洞的排前。
+	// 작업 드롭다운: 취약점이 있는 작업의 설명과 개수를 표시하고 최근 취약점이 있는 작업부터 정렬합니다. 삭제된 작업의 설명은 비며 프런트엔드가 id를 표시합니다.
 	trows, err := d.Query(`SELECT f.task_id, COALESCE(t.name, ''), COALESCE(t.description, ''), COUNT(*)
 		FROM findings f
 		LEFT JOIN tasks t ON f.task_id = t.id
@@ -652,7 +647,7 @@ func (d *DB) GetFinding(id int64) (*DBFinding, error) {
 
 // DeleteFinding removes a finding entirely: the standalone findings row and its
 // originating exploration node (kind='finding'), so it disappears from the findings
-// list, the per-task 发现 Tab, and the exploration graph alike. Deleting the node
+// 전체 목록, 작업별 취약점 탭, 탐색 그래프에 동일하게 적용합니다. 노드 삭제 시
 // cascades its edges + node_assets and nulls any activity referencing it. Returns
 // rows affected (0 = no finding with that id).
 func (d *DB) DeleteFinding(id int64) (n int64, err error) {
@@ -691,9 +686,8 @@ func (d *DB) DeleteFindingsByTask(taskID int64) (int64, error) {
 
 // SetFindingStatus updates one finding's triage state. Returns rows affected.
 //
-// 底层 setter：只改状态、不登记推送事件。生产代码改状态请走
-// SetFindingStatusWithNotify —— 直接调本函数会让「状态变更推送」静默失效。
-// 保留它是为了让不关心通知的用例（参数校验、复测流程）能单独驱动状态。
+// 하위 setter는 상태만 바꾸고 알림을 등록하지 않습니다. 운영 코드에서는 SetFindingStatusWithNotify를 사용해야 상태 변경 알림이 조용히 누락되지 않습니다.
+// 알림과 무관한 매개변수 검증/재검증 흐름 테스트가 독립적으로 상태를 바꾸도록 유지합니다.
 func (d *DB) SetFindingStatus(id int64, status string) (int64, error) {
 	res, err := d.Exec(`UPDATE findings SET status=$1 WHERE id=$2`, status, id)
 	if err != nil {
@@ -711,7 +705,7 @@ func (d *DB) SetFindingReportByNodeID(nodeID int64, report string) (int64, error
 
 // setFindingCol updates one text column on the standalone finding row AND mirrors
 // the new value into the originating exploration node's payload under jsonKey, so the
-// per-task 发现 Tab (which reads the node payload, not this table) stays in sync.
+// 이 테이블 대신 노드 payload를 읽는 작업별 취약점 탭도 동기화합니다.
 // Returns rows affected (0 when no finding has that id); the node sync is best-effort.
 // col and jsonKey MUST be trusted constants (they are interpolated into SQL) — never
 // pass user input.
@@ -738,13 +732,13 @@ func (d *DB) SetFindingSeverity(id int64, severity string) (int64, error) {
 	return d.setFindingCol(id, "severity", "severity", severity)
 }
 
-// SetFindingName updates one finding's 漏洞名称 (+ node payload sync). Empty name is
+// SetFindingName은 취약점 이름과 노드 payload를 함께 갱신합니다. 빈 이름은
 // allowed — the frontend falls back to the vuln class for display.
 func (d *DB) SetFindingName(id int64, name string) (int64, error) {
 	return d.setFindingCol(id, "name", "name", name)
 }
 
-// SetFindingVulnClass updates one finding's 漏洞类别 (+ node payload sync).
+// SetFindingVulnClass는 취약점 분류와 노드 payload를 함께 갱신합니다.
 func (d *DB) SetFindingVulnClass(id int64, vulnclass string) (int64, error) {
 	return d.setFindingCol(id, "vulnclass", "vulnclass", vulnclass)
 }
@@ -768,7 +762,7 @@ func (a *AssetStore) FindingMetaByNodeID(taskID int64) (map[int64]FindingMeta, e
 
 // FindingMetaByNodeID maps a task's finding node ids to their standalone-row
 // metadata, so the per-task view (which reads exploration nodes) can show and
-// edit the same status — and the same anchored assets — as the global 发现 page.
+// 전체 취약점 페이지와 같은 상태 및 연결 자산을 편집합니다.
 func (d *DB) FindingMetaByNodeID(taskID int64) (map[int64]FindingMeta, error) {
 	out := map[int64]FindingMeta{}
 	if taskID <= 0 {

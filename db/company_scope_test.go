@@ -60,8 +60,8 @@ func TestParseAutoScopeLine(t *testing.T) {
 		{name: "icp chinese", input: "沪网备案 9988", kind: "icp", normalized: "沪网备案9988"},
 		{name: "icp domain", input: "icp.example.com", kind: "domain", normalized: "icp.example.com"},
 		{name: "icp url query", input: "https://example.com/path?icp=1", kind: "domain", normalized: "example.com"},
-		// 备案号不含点号：掺了域名/版本号的描述性文字归关键词，否则会存成一条
-		// 永远匹配不上的死 ICP 规则。
+		// ICP 등록 번호에는 점이 없습니다. 도메인/버전이 섞인 설명은 키워드로 분류해야
+		// 어떤 자산에도 일치하지 않는 ICP 규칙으로 저장되지 않습니다.
 		{name: "icp with domain text", input: "备案 www.example.com", kind: "keyword", normalized: "备案 www.example.com"},
 		{name: "icp with version text", input: "某公司 ICP v1.0", kind: "keyword", normalized: "某公司 icp v1.0"},
 		{name: "icp fullwidth dot", input: "备案 例．com", kind: "keyword", normalized: "备案 例．com"},
@@ -233,14 +233,14 @@ func TestCompanyICPAttribution(t *testing.T) {
 	if err != nil {
 		t.Skipf("postgres unavailable (%v) — skipping", err)
 	}
-	// 关连接必须走 t.Cleanup 且**注册在清理之前**：t.Cleanup 是后进先出，
-	// 先注册关闭 → 关闭最后执行，下面的数据清理才连得上库。
-	// 原先这里是 `defer d.Close()`：defer 在函数返回时先跑，t.Cleanup 在那之后
-	// 才执行，于是清理语句全落在**已关闭的连接**上、错误又被 `_, _ =` 丢弃，
-	// 资产与公司就永久残留在库里。残留本身不会立刻报错，但本用例用
-	// `MAX(companies.id)+1` 当假 TaskID 给资产打标（见下方 suffix），
-	// 一旦这个数字与别的用例的任务 id 撞上，那个用例按「恰好 N 个资产」的断言
-	// 就会莫名失败——排查成本极高。
+	// 연결 종료는 t.Cleanup으로 데이터 정리보다 먼저 등록해야 합니다. 후입선출이므로
+	// 먼저 등록한 종료가 마지막에 실행되어 아래 정리가 DB에 접근할 수 있습니다.
+	// 이전 defer d.Close()는 함수 반환 시 먼저 실행되고 t.Cleanup은 나중에 실행되어
+	// 이미 닫힌 연결로 정리했으며 _, _ =로 오류까지 버려
+	// 자산/기업이 DB에 남았습니다. 즉시 오류는 없지만 테스트가
+	// MAX(companies.id)+1을 가짜 TaskID로 사용하므로(suffix 참고)
+	// 다른 테스트의 작업 id와 겹치면 정확한 자산 수 단언이
+	// 불규칙하게 실패해 원인을 찾기 어려워집니다.
 	t.Cleanup(func() { d.Close() })
 
 	var suffix int64
@@ -254,12 +254,12 @@ func TestCompanyICPAttribution(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		// 不吞错误：清理失败会污染后续用例，必须让它在本次运行里显形。
+		// 정리 실패는 이후 테스트를 오염시키므로 오류를 숨기지 않고 이번 실행에서 드러냅니다.
 		if _, err := d.Exec(`DELETE FROM assets WHERE task_ids @> ARRAY[$1]::bigint[]`, suffix); err != nil {
-			t.Errorf("清理测试资产失败: %v", err)
+			t.Errorf("테스트 자산 정리 실패: %v", err)
 		}
 		if _, err := d.Exec(`DELETE FROM companies WHERE id=$1`, companyID); err != nil {
-			t.Errorf("清理测试公司失败: %v", err)
+			t.Errorf("테스트 기업 정리 실패: %v", err)
 		}
 	})
 

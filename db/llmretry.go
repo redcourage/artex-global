@@ -5,18 +5,18 @@ import (
 	"time"
 )
 
-// LLM 重试策略：五层重试的「次数 + 间隔」全局配置，见 docs/LLM重试设计.md。
-// 存在 settings 表的一个 JSON 值里 —— 它是整机一份的运行参数，不值得为它开一张表；
-// 读取走内置默认兜底，所以键不存在(全新库/从未配置过)时行为与写死常量时代完全一致。
+// LLM 재시도 정책: 5개 계층의 횟수와 간격에 대한 전역 설정입니다. 관련 설계 문서를 참고하세요.
+// 전체 프로세스에서 공유하는 실행 매개변수이므로 별도 표 대신 settings의 JSON 값 하나에 저장합니다.
+// 조회 시 내장 기본값을 사용하므로 키가 없는 새 DB/미설정 상태의 동작은 기존 상수 방식과 같습니다.
 
 const settingLLMRetryPolicy = "llm_retry_policy"
 
 // RetryRule is one layer's knob pair. The zero value means "unset":
 //
-//	Attempts   0 = 用内置默认次数; -1 = 关闭该层重试; >0 = 用该值
-//	IntervalMS 0 = 用该层原本的间隔策略(通常是指数退避); >0 = 改用固定毫秒间隔
+// Attempts: 0=내장 기본 횟수, -1=해당 계층 재시도 비활성화, >0=지정 횟수
+// IntervalMS: 0=기존 간격 정책(대개 지수 백오프), >0=고정 밀리초 간격
 //
-// -1 是「显式关掉」而不是「0 次」，因为 0 已经被「未配置」占用了。
+// 0은 미설정을 뜻하므로 명시적 비활성화에는 -1을 사용합니다.
 type RetryRule struct {
 	Attempts   int `json:"attempts"`
 	IntervalMS int `json:"interval_ms"`
@@ -76,20 +76,20 @@ func (o RetryOverride) Clamped() RetryOverride {
 	return o
 }
 
-// LLMRetryPolicy holds the五层 retry configuration. Connect/Empty/Stream are the
+// LLMRetryPolicy는 5개 계층의 재시도 설정을 가집니다. Connect/Empty/Stream은
 // per-request layers (a profile may override them, see LLMProfile.Retry);
 // Breaker and Intent are process-wide by nature and live only here.
 type LLMRetryPolicy struct {
-	// Connect：SDK 建连重试(连接重置/超时/429/5xx，流开始前)。默认 3 次、指数退避。
+	// Connect: SDK 연결 재시도(스트림 시작 전 연결 초기화/시간 초과/429/5xx). 기본 3회, 지수 백오프.
 	Connect RetryRule `json:"connect"`
-	// Empty：SDK 空响应重试(完成但无 content block，仅 openai 格式)。默认 2 次、指数退避。
+	// Empty: SDK 빈 응답 재시도(완료했지만 content block 없음, openai 형식만). 기본 2회, 지수 백오프.
 	Empty RetryRule `json:"empty"`
-	// Stream：同 provider 安全窗口重试(未交付输出前的断流重放)。默认 2 次、0.5s 起指数(封顶 4s)。
+	// Stream: 같은 provider의 안전 구간 재시도(출력 전달 전 스트림 단절). 기본 2회, 0.5초부터 지수 증가하며 최대 4초.
 	Stream RetryRule `json:"stream"`
-	// Breaker：轮询熔断。Attempts=连续几次瞬时失败触发熔断(默认 3，-1=瞬时失败不熔断，
-	// 硬失败如余额不足/密钥失效仍立即熔断)；IntervalMS=固定冷却时长(0=默认 1/5/30min 梯度)。
+	// Breaker: 장애 조치 회로 차단. Attempts=연속 일시 실패 차단 횟수(기본 3, -1이면 일시 실패로 차단하지 않음).
+	// 잔액 부족/키 무효 같은 확정 실패는 즉시 차단합니다. IntervalMS=고정 대기 시간(0이면 기본 1/5/30분 단계).
 	Breaker RetryRule `json:"breaker"`
-	// Intent：worker 以 model_error 收场后的整条意图重跑。默认 2 次、固定 3s。
+	// Intent: worker가 model_error로 종료한 뒤 의도 전체를 재실행합니다. 기본 2회, 고정 3초.
 	Intent RetryRule `json:"intent"`
 }
 

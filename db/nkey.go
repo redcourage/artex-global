@@ -10,8 +10,8 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
-// 归一化自然键 (nkey)：移植自旧 graph/id.go，去掉 StableID 哈希（PG 用 BIGSERIAL 主键 +
-// UNIQUE(type, nkey) 去重）。子资产的 nkey 内嵌父资产的 int64 id，把层级编码进键。
+// 정규화 자연 키(nkey): 기존 graph/id.go에서 이식하고 StableID 해시를 제거했습니다(PG는 BIGSERIAL 기본 키와
+// UNIQUE(type, nkey)로 중복 제거). 하위 자산의 nkey에는 부모 자산의 int64 id를 넣어 계층을 표현합니다.
 
 func DomainKey(fqdn string) string {
 	return strings.TrimSuffix(strings.ToLower(strings.TrimSpace(fqdn)), ".")
@@ -20,7 +20,7 @@ func DomainKey(fqdn string) string {
 func IPKey(ip string) string { return strings.TrimSpace(ip) }
 
 // RootDomain returns the registrable domain (eTLD+1) for a host and whether the
-// host itself IS that apex (§3.1). Edge cases (§3.1 边界处理): an IP literal or a
+// host 자체가 루트인 경우도 포함합니다(§3.1). 경계 사례(§3.1): IP 리터럴이나
 // host publicsuffix can't classify (localhost / internal / non-ICANN TLD) is
 // returned unchanged as its own root with isApex=true — best-effort, never treated
 // as a subdomain.
@@ -56,9 +56,9 @@ func ParameterKey(endpointID int64, location, name string) string {
 	return itoa(endpointID) + "|" + strings.ToLower(location) + "|" + name
 }
 
-// NormalizeParamName 归一化参数名（endpoint.params 元素的「相同引用」判定）。
-// 规则：lower + trim，不做同义词合并(userId/user_id/uid 视为不同)。写入与查询共享此实现，
-// 保证「按参数名查同公司接口」可复现。
+// NormalizeParamName은 매개변수 이름을 정규화합니다(endpoint.params 요소의 동일 참조 판정).
+// 규칙은 lower + trim이며 동의어를 합치지 않습니다(userId/user_id/uid는 서로 다름). 쓰기와 조회에서 공유하므로
+// 매개변수 이름으로 같은 기업의 API를 검색하는 동작을 재현할 수 있습니다.
 func NormalizeParamName(name string) string {
 	return strings.ToLower(strings.TrimSpace(name))
 }

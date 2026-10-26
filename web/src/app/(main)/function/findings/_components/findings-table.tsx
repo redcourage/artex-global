@@ -57,7 +57,7 @@ export const FINDING_STATUSES: FindingStatus[] = [
 
 export const UNASSIGNED_TASK = "__unassigned__";
 
-// 行内编辑缓冲:当前展开行的名称/类别/严重等级。
+// 행 편집 버퍼: 펼친 행의 이름/유형/심각도.
 export interface FindingEdit {
   name: string;
   vulnclass: string;
@@ -94,7 +94,7 @@ interface FindingsTableProps {
   selectedIds: Set<string>;
   onToggleSelected: (id: string, checked: boolean) => void;
   onToggleSelectedPage: (ids: string[], checked: boolean) => void;
-  /** 当前展开行的 findingRowKey;null = 全部收起。 */
+  /** 펼친 행의 findingRowKey. null이면 모두 접힘. */
   expandedKey: string | null;
   onToggleRow: (finding: Finding) => void;
   reports: Record<string, FindingReport>;
@@ -107,12 +107,12 @@ interface FindingsTableProps {
   activeRetests: Record<string, ActiveFindingRetest>;
   onDeepen: (finding: Finding) => void;
   onDelete: (finding: Finding) => void;
-  /** 全选框的无障碍标签,平铺视图与分组视图措辞不同。 */
+  /** 전체 선택 체크박스 접근성 라벨. flat과 그룹 보기의 문구가 다르다. */
   selectAllLabel?: string;
 }
 
-// FindingsTable 是发现列表的表格主体,平铺视图与按任务分组视图共用同一份行渲染
-// (勾选 / 行内展开 / 行内改名与改状态 / 复测 / 深入 / 删除),差异只在外层容器与分页。
+// FindingsTable은 발견 목록 표 본문으로 flat과 작업별 그룹 보기가 동일한 행 렌더링을 공유한다.
+// 선택/행 확장/이름 및 상태 변경/재검증/심층 탐색/삭제는 같고 바깥 컨테이너와 페이지 구분만 다르다.
 export function FindingsTable({
   items,
   selectedIds,
@@ -145,7 +145,7 @@ export function FindingsTable({
   }
 
   return (
-    /* 固定列宽保证展开内容不撑开表格；窄屏只在表格内部横向滚动。 */
+    /* 열 너비를 고정해 확장 내용이 표를 넓히지 않게 한다. 좁은 화면에서는 표 안에서만 가로 스크롤한다. */
     <Table className="min-w-[60rem] table-fixed">
       <TableHeader>
         <TableRow>
@@ -331,11 +331,11 @@ export function FindingsTable({
               </TableRow>
               {open && (
                 <TableRow className="hover:bg-transparent">
-                  {/* whitespace-normal 覆盖 TableCell 默认的 nowrap,否则展开区文字
-                      被强制单行、直接溢出单元格。 */}
+                  {/* whitespace-normal로 TableCell의 기본 nowrap을 덮어써 확장 영역 텍스트가
+                      한 줄로 강제되어 셀 밖으로 넘치지 않게 한다. */}
                   <TableCell colSpan={COLUMN_COUNT} className="bg-muted/30 whitespace-normal">
                     <div className="flex flex-col gap-2 px-2 py-1">
-                      {/* 行内编辑:名称/类别/严重等级,可改并保存(仅独立 finding 行)。 */}
+                      {/* 행 편집: 독립 finding 행의 이름/유형/심각도를 수정하고 저장할 수 있다. */}
                       {f.finding_id && edit && (
                         <div className="flex flex-wrap items-end gap-3 rounded-md border bg-background px-3 py-2.5">
                           <div className="flex min-w-[12rem] flex-1 flex-col gap-1">
@@ -402,7 +402,7 @@ export function FindingsTable({
                         {f.evidence}
                       </pre>
 
-                      {/* 详细报告(Markdown):展开时按 finding_id 懒加载,免进详情页即可查看。 */}
+                      {/* 상세 보고서(Markdown): 펼칠 때 finding_id로 지연 조회해 상세 페이지 진입 없이 표시한다. */}
                       {f.finding_id && (
                         <div className="flex flex-col gap-1.5">
                           <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
@@ -428,9 +428,9 @@ export function FindingsTable({
                             if (!rep.text.trim())
                               return <p className="text-xs text-muted-foreground">{t("table.reportEmpty")}</p>;
                             return (
-                              // break-words 会继承到段落/列表,pre 另加
-                              // whitespace-pre-wrap 让代码块也换行——否则长代码行/长 URL
-                              // 会撑宽 colSpan 单元格,把整张表挤出横向滚动条。
+                              // break-words는 문단/목록에 상속되며 pre에는
+                              // whitespace-pre-wrap을 추가해 코드 블록도 줄바꿈한다. 그렇지 않으면 긴 코드/URL이
+                              // colSpan 셀을 넓혀 표 전체에 가로 스크롤을 만든다.
                               <div className="min-w-0 break-words rounded-md border bg-background px-3 py-2 [&_pre]:whitespace-pre-wrap">
                                 <Markdown text={rep.text} />
                               </div>

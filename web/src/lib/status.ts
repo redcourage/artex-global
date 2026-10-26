@@ -1,5 +1,5 @@
 // Centralised status → color semantics, reused across the whole app.
-// Spec §8.3: 意图 / 覆盖 / 任务 / 严重度 each have a consistent color set.
+// 명세 §8.3: 의도 / 커버리지 / 작업 / 심각도별로 일관된 색상 집합을 사용한다.
 // User-facing labels live in the "status" message namespace (ko/zh); the maps
 // here only carry the color tone, keyed by the same status value.
 
@@ -11,7 +11,7 @@ export const toneClasses: Record<Tone, string> = {
   green: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
   amber: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20",
   red: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/20",
-  // rose 用作「严重」——实心高强调,视觉上明显高于「高危」的软红描边。
+  // 치명적은 진한 rose로 강조해 높은 위험의 부드러운 빨간 테두리보다 시각적으로 강하게 표시한다.
   rose: "bg-rose-600 text-white border-rose-600 dark:bg-rose-600 dark:text-white",
   violet: "bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/20",
   slate: "bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/20",
@@ -37,13 +37,13 @@ const intent: Record<string, StatusMeta> = {
   running: { tone: "blue" },
   paused: { tone: "amber" },
   done: { tone: "green" },
-  // blocked = 模型/API/网络故障重试用尽，这条意图基本没真正探成（非目标拦截）。
+  // blocked = 모델/API/네트워크 장애 재시도 소진. 의도를 제대로 탐색하지 못함(대상 차단이 아님).
   blocked: { tone: "red" },
-  // exhausted = 达到步数/时间预算被中途掐断、只写回部分结果（非方向已探尽）。
+  // exhausted = 턴/시간 예산에 도달해 중간 종료하고 일부 결과만 기록함(탐색 방향 소진이 아님).
   exhausted: { tone: "violet" },
-  // stopped = 历史软删除状态（保留,历史数据）。
+  // stopped = 과거 소프트 삭제 상태(이전 데이터 보존).
   stopped: { tone: "slate" },
-  // deleted = 用户假删除了该意图（保留节点与血缘，删除原因见 delete_reason 字段）。
+  // deleted = 사용자가 의도를 소프트 삭제함(노드와 계보 유지, 사유는 delete_reason 참조).
   deleted: { tone: "slate" },
 };
 
@@ -101,8 +101,8 @@ const node: Record<string, StatusMeta> = {
   tombstoned: { tone: "neutral" },
 };
 
-// 推送投递状态。sending 用 blue 而不是 amber：它不是「有问题」，
-// 而是「已被领取、正在发」，与 pending 的等待语义要能区分开。
+// 알림 발송 상태. sending은 문제가 아니라 선점되어 발송 중임을 나타내므로
+// amber 대신 blue로 표시해 대기 중인 pending과 구분한다.
 const delivery: Record<string, StatusMeta> = {
   pending: { tone: "amber" },
   sending: { tone: "blue" },
