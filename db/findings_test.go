@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// TestDeleteFinding verifies删除漏洞 removes both the findings row and its
+// TestDeleteFinding은 취약점 삭제 시 findings 행과 다음 항목이 함께 제거되는지 검증합니다:
 // originating exploration node (kind='finding').
 func TestDeleteFinding(t *testing.T) {
 	d, err := Open(testDSN(t))
@@ -19,7 +19,7 @@ func TestDeleteFinding(t *testing.T) {
 	}
 	defer d.Close()
 
-	tk, err := d.CreateTask("删除漏洞测试", "目标", nil, 0, 0)
+	tk, err := d.CreateTask("취약점 삭제 테스트", "목표", nil, 0, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +31,7 @@ func TestDeleteFinding(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fid, err := d.AddFinding(tk.ID, nodeID, "XSS", "反射型 XSS", "high", "summary", "poc", "worker", nil)
+	fid, err := d.AddFinding(tk.ID, nodeID, "XSS", "반사형 XSS", "high", "summary", "poc", "worker", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -439,13 +439,13 @@ func TestAddFindingFollowUpIntent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	auditInput := Activity{Worker: "system", Kind: "text", Summary: "사용자가 제출한 취약점 심화 익스플로잇 의도", Detail: "验证可利用性并形成证据链"}
-	intentID, audit, err := store.AddFindingFollowUpIntent(findingID, findingNodeID, "验证可利用性并形成证据链", auditInput)
+	auditInput := Activity{Worker: "system", Kind: "text", Summary: "사용자가 제출한 취약점 심화 익스플로잇 의도", Detail: "악용 가능성을 검증하고 증거 연결을 구성"}
+	intentID, audit, err := store.AddFindingFollowUpIntent(findingID, findingNodeID, "악용 가능성을 검증하고 증거 연결을 구성", auditInput)
 	if err != nil {
 		t.Fatal(err)
 	}
-	secondID, _, err := store.AddFindingFollowUpIntent(findingID, findingNodeID, "从另一条路径深入", Activity{
-		Worker: "system", Kind: "text", Summary: "사용자가 제출한 취약점 심화 익스플로잇 의도", Detail: "从另一条路径深入",
+	secondID, _, err := store.AddFindingFollowUpIntent(findingID, findingNodeID, "다른 경로로 심층 탐색", Activity{
+		Worker: "system", Kind: "text", Summary: "사용자가 제출한 취약점 심화 익스플로잇 의도", Detail: "다른 경로로 심층 탐색",
 	})
 	if err != nil {
 		t.Fatal(err)

@@ -387,7 +387,7 @@ func (s *Server) interceptDecide(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"ok": true})
 }
 
-// --- tool-config (全局工具拦截范围) ---
+// --- tool-config(전역 도구 차단 범위) ---
 
 // interceptGetToolConfig returns the list of tool names that are currently
 // configured to enter the intercept rule system.
@@ -420,7 +420,7 @@ func (s *Server) interceptSetToolConfig(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, 200, map[string]any{"ok": true})
 }
 
-// --- LLM fallback judge config (全局模型兜底) ---
+// --- LLM 대체 판정 설정(전역 모델 대체 판정) ---
 
 // interceptGetJudgeConfig returns the resolved judge configuration. Prompt is the
 // effective prompt (built-in template when unset), so the UI can prefill it.

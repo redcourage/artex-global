@@ -28,13 +28,13 @@ type goalSpec struct {
 }
 
 // launchTask runs the shared post-creation sequence for a task created via ANY
-// path (HTTP createTask 或 orchestration spawn_task),避免两处复制粘贴:
-//  1. seed 根资产,喂给事件驱动 loop;
-//  2. 可选种子意图,worker 免等首轮 planner 直接开跑;
-//  3. 后台异步做目标分解(发「0차 목표 분해」round + LLM 分解步骤 + 逐条 goal,页面可见),
-//     分解完再 engine.Run —— 引擎在 goal 节点就绪后才启动,避免 planner 抢在 goal 之前跑的竞态。
+// HTTP createTask와 오케스트레이션 spawn_task 경로가 같은 처리를 공유하여 중복을 피합니다.
+// 1. 루트 자산을 초기화해 이벤트 루프에 전달합니다.
+// 2. 선택적 초기 의도로 첫 planner를 기다리지 않고 worker가 시작합니다.
+// 3. 백그라운드에서 목표를 비동기 분해합니다(0차 목표 분해 round, LLM 분해 단계, 각 goal을 화면에 표시).
+// 분해 후 engine.Run을 호출해 goal 준비 전에 planner가 실행되는 경합을 막습니다.
 //
-// 异步(goroutine)所以调用方立即返回,两条路径行为一致:秒建任务、后台拆目标。
+// goroutine이므로 호출자는 즉시 반환하며 두 경로 모두 작업은 바로 생성하고 목표는 백그라운드에서 분해합니다.
 // 표시 전용 활동 요약(작업 단위·node_id 없음·전사에만 노출·되먹임 경로 미접촉).
 // 초기 목표 분해 라운드와 동시 실행 대기열 상태 안내다. 한국어화해도 두뇌 입력
 // (BRIEF 경계 #1)을 건드리지 않는다. 포맷 인자(%d)는 원형 보존. [[G132]]
@@ -55,7 +55,7 @@ func (s *Server) launchTask(t *Task, seedText string, seedFirstIntent bool) {
 	}
 	s.engine.decInflight(t.ID)
 	if _, err := s.admitTask(t, "bootstrap"); err != nil {
-		log.Printf("[concurrency] task %s 启动失败: %v", t.ID, err)
+		log.Printf("[concurrency] task %s 시작 실패: %v", t.ID, err)
 	}
 }
 
@@ -197,8 +197,8 @@ func (s *Server) admitTaskWhen(t *Task, mode string, requirePaused bool) (queued
 	// this ordering, its already-running worker loops can claim the newly-opened
 	// intent in the gap between status=running and queued=true.
 	if shouldQueue || wasTerminal || wasPaused || wasQueued {
-		s.engine.Pause(t.ID, agent.Causef("queued_for_admission", "任务等待运行准入",
-			"任务正在等待并发队列或准入状态提交，本次执行已停止；只有获得运行槽后才会重新领取意图"))
+		s.engine.Pause(t.ID, agent.Causef("queued_for_admission", "작업 실행 허용 대기",
+			"작업이 동시 실행 대기열 또는 실행 허용 상태 커밋을 기다리므로 이번 실행을 중지했습니다. 실행 슬롯을 얻은 뒤에만 의도를 다시 가져옵니다"))
 	}
 
 	status := lifecycle.Status
@@ -286,11 +286,11 @@ func (s *Server) reconcileConcurrency() {
 				continue
 			}
 			mode := s.resumeAdmissionMode(task)
-			s.engine.Pause(task.ID, agent.Causef("llm_unavailable_queued", "LLM 不可用，任务进入等待队列",
-				"任务当前无法解析可运行的 Planner/Worker LLM，已释放并发槽；配置恢复后按队列顺序继续"))
+			s.engine.Pause(task.ID, agent.Causef("llm_unavailable_queued", "LLM을 사용할 수 없어 작업이 대기열에 들어갑니다",
+				"현재 실행 가능한 Planner/Worker LLM을 확인할 수 없어 동시 실행 슬롯을 반환했습니다. 설정이 복구되면 대기열 순서대로 계속합니다"))
 			if err := s.m.EnqueueTask(task.ID, mode); err != nil {
 				s.engine.Resume(task)
-				log.Printf("[concurrency] task %s 因 LLM 不可用入队失败: %v", task.ID, err)
+				log.Printf("[concurrency] task %s LLM 사용 불가로 인한 대기열 등록 실패: %v", task.ID, err)
 				continue
 			}
 			s.engine.emitActivity(task, db.Activity{Worker: "system", Kind: "text",
@@ -366,18 +366,18 @@ func (s *Server) reconcileConcurrency() {
 	}
 }
 
-// reviveTask 让一个已停下的任务重新跑起来:把终态(done/failed/timeout)拉回 running、
-// 解除暂停,并(重)启动引擎循环 + 唤醒。已在 running 且未暂停的任务:只剩 Run 里的一次
-// Notify,近乎无副作用。用于「主 agent set_goals 新增目标」和「重跑 blocked 意图」两处。
+// reviveTask는 멈춘 작업의 done/failed/timeout을 running으로 돌리고 일시 정지를 해제하여
+// 엔진 루프를 다시 시작하고 깨웁니다. 이미 running이고 정지하지 않았다면 Run 안의 Notify만 남아
+// 부수 효과가 거의 없습니다. 메인 agent의 set_goals 목표 추가와 blocked 의도 재실행에서 사용합니다.
 //
-// 为什么必须显式复活:planner/worker 循环的终态门(engine.go)会吞掉普通 notify——光改
-// 图 + Notify 唤不醒已判完成的任务;重启后终态任务的 goroutine 也可能已不在,故还要 Run。
+// planner/worker의 최종 상태 게이트는 일반 notify를 무시하므로 그래프 변경과 Notify만으로
+// 완료 작업을 깨울 수 없습니다. 재시작 후 goroutine이 없을 수도 있어 명시적 복구와 Run이 필요합니다.
 func (s *Server) reviveTask(t *Task) {
 	if t == nil {
 		return
 	}
 	if _, err := s.admitTask(t, "resume"); err != nil {
-		log.Printf("[revive] task %s 恢复失败: %v", t.ID, err)
+		log.Printf("[revive] task %s 복구 실패: %v", t.ID, err)
 	}
 }
 
@@ -416,7 +416,7 @@ func (s *Server) createGoals(ctx context.Context, t *Task, emit func(db.Activity
 		// as a single goal so the task still has something to judge against. This is the
 		// only path that writes here — decomposed goals are already persisted by the tool.
 		if g := strings.TrimSpace(t.Goal); g != "" {
-			log.Printf("[goals] task %s: LLM 目标拆解无产出，回退为「原始目标作为单目标」", t.ID)
+			log.Printf("[goals] task %s: LLM 목표 분해 결과가 없어 원래 목표를 단일 목표로 사용", t.ID)
 			origin, _ := t.Store.OriginFactID()
 			id, _ := t.Store.AddNode(db.KindGoal, map[string]any{"text": g}, 0, "open", "system", nil)
 			if origin > 0 && id > 0 {

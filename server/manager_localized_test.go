@@ -11,7 +11,7 @@ import "testing"
 // 호출 그래프 판정(errWorkersPositive 상수 주석 참조): 이 문구는 설정 PUT 핸들러
 // (server.go:3512 → writeErr 400)로만 노출되는 사용자 전용이며, 에이전트 도구(actool)
 // 경로가 없어 두뇌 입력이 아니다. 같은 파일 384 행의 기동 복구 오류는 운영자 기동
-// 로그 성격이라 F3b 범위 밖(원문 보존)이므로 이 테스트의 대상이 아니다.
+// 로그도 한국어로 표시하지만 이 테스트는 설정 오류만 검사한다.
 func TestSetWorkersErrorLocalized(t *testing.T) {
 	err := (&Manager{}).SetWorkers(0)
 	if err == nil {

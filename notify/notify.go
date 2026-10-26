@@ -1,37 +1,37 @@
-// Package notify 实现漏洞发现的 IM / 邮件推送渠道适配层。
+// Package notify는 취약점 발견의 IM/이메일 알림 채널 어댑터 계층을 구현한다.
 //
-// 分层：本包是**叶子包**，只依赖标准库。它不认识数据库、不认识 server。渠道配置
-// 以 map[string]any 传入（对应 notification_channels.config 这一 JSONB 列），
-// 待推送内容以 Message 传入。这样拆开的好处是：签名计算、UTF-8 截断、过滤匹配这些
-// 真正容易出错的地方可以脱离 PostgreSQL 单测，宿主只需在 server 侧做编排。
+// 구조: 이 패키지는 표준 라이브러리만 사용하는 말단 패키지이며 DB와 server를 모른다. 채널 설정은
+// map[string]any로 전달(notification_channels.config JSONB 열에 대응)하고
+// 발송 내용은 Message로 전달한다. 서명 계산, UTF-8 자르기, 필터 일치처럼 오류가 나기 쉬운 부분을
+// PostgreSQL 없이 단위 테스트할 수 있으며 호스트는 server 측에서 실행만 조정한다.
 //
-// 并发约定：Channel 的实现必须**无状态**。同一个 Channel 实例会被多个渠道配置
-// （甚至同一渠道的多个机器人实例）并发复用，所有凭据一律从 cfg 参数传入，
-// 不允许把 webhook URL 之类的东西缓存进实现自身的字段。
+// 동시성 규칙: Channel 구현은 상태가 없어야 한다. 같은 인스턴스를 여러 채널 설정과
+// 같은 채널의 여러 봇 인스턴스가 동시에 재사용하므로 모든 자격 증명은 cfg로 전달한다.
+// webhook URL 등을 구현체 필드에 캐시하면 안 된다.
 package notify
 
-// 渠道类型标识。取值同时是 notification_channels.kind 的合法集合，由 server 侧
-// 白名单校验（与 findings.status 同理，不用 DB CHECK，方便后续加渠道）。
+// 채널 유형 식별자. notification_channels.kind의 허용값이며 server 측에서
+// 허용 목록으로 검증한다(findings.status처럼 DB CHECK 없이 채널 추가를 용이하게 함).
 const (
-	KindDingTalk = "dingtalk" // 钉钉自定义机器人
-	KindFeishu   = "feishu"   // 飞书(含 Lark)自定义机器人
-	KindWeCom    = "wecom"    // 企业微信群机器人
-	KindWebhook  = "webhook"  // 通用 Webhook：自定义方法/头/JSON 模板
+	KindDingTalk = "dingtalk" // DingTalk 사용자 정의 봇.
+	KindFeishu   = "feishu"   // Feishu(Lark 포함) 사용자 정의 봇.
+	KindWeCom    = "wecom"    // WeCom 그룹 봇.
+	KindWebhook  = "webhook"  // 일반 Webhook: 사용자 정의 메서드/헤더/JSON 템플릿.
 	KindTelegram = "telegram" // Telegram Bot API
-	KindEmail    = "email"    // SMTP 邮件
+	KindEmail    = "email"    // SMTP 이메일.
 )
 
-// 事件类型，对应 notification_events.kind。
+// 이벤트 유형. notification_events.kind에 대응.
 const (
 	EventFindingCreated       = "finding_created"
 	EventFindingStatusChanged = "finding_status_changed"
 )
 
-// InitKind 是 config 里为空的 kind 的兜底值。
+// InitKind는 config의 kind가 비어 있을 때 사용하는 기본값이다.
 const InitKind = KindDingTalk
 
-// severityRank 把漏洞级别映射成可比较的序数。未知级别返回 0，因此任何
-// min_severity 设置都会把未知级别挡在外面——存疑时不推，避免误报刷屏。
+// severityRank는 취약점 심각도를 비교 가능한 순위로 변환한다. 알 수 없는 값은 0이므로
+// 어떤 min_severity 설정에서도 제외해 불확실한 알림이 대량 발송되지 않게 한다.
 var severityRank = map[string]int{
 	"low":      1,
 	"medium":   2,
@@ -39,7 +39,7 @@ var severityRank = map[string]int{
 	"critical": 4,
 }
 
-// SeverityRank 返回级别的序数；未知级别返回 0。
+// SeverityRank는 심각도 순위를 반환한다. 알 수 없는 값은 0.
 func SeverityRank(severity string) int { return severityRank[severity] }
 
 // Lang, when wired by the server, returns the active user-facing output language
@@ -78,8 +78,8 @@ var statusLabels = map[string]map[string]string{
 	"ja": {"pending": "対応待ち", "in_progress": "対応中", "confirmed": "確認済み", "resolved": "対応済み", "fixed": "修正済み", "false_positive": "誤検知", "ignored": "無視", "duplicate": "重複", "risk_accepted": "リスク受容"},
 }
 
-// SeverityLabel 返回带 emoji 的级别名(按当前输出语言)，用于消息标题与卡片配色。
-// 未知级别原样回显，不臆造。
+// SeverityLabel은 현재 출력 언어의 emoji 포함 심각도 이름을 반환해 제목과 카드 색상에 사용한다.
+// 알 수 없는 심각도는 추정하지 않고 그대로 표시한다.
 func SeverityLabel(severity string) string {
 	if v, ok := severityLabels[labelLang()][severity]; ok {
 		return v
@@ -87,7 +87,7 @@ func SeverityLabel(severity string) string {
 	return severity
 }
 
-// StatusLabel 把处置状态翻译成当前输出语言，用于状态变更消息。未知状态原样回显。
+// StatusLabel은 처리 상태를 현재 출력 언어로 번역해 상태 변경 메시지에 사용한다. 알 수 없는 값은 그대로 표시한다.
 func StatusLabel(status string) string {
 	if v, ok := statusLabels[labelLang()][status]; ok {
 		return v
@@ -95,8 +95,8 @@ func StatusLabel(status string) string {
 	return status
 }
 
-// AtLeast 判断 severity 是否达到 min 门槛。min 为空表示不设门槛，一律通过。
-// 注意未知 severity 的序数为 0，会被任何非空 min 拒掉（见 severityRank 注释）。
+// AtLeast는 severity가 min 이상인지 판단한다. min이 비어 있으면 모두 통과한다.
+// 알 수 없는 severity는 순위 0이라 비어 있지 않은 min에 의해 거부된다(severityRank 참조).
 func AtLeast(severity, min string) bool {
 	if min == "" {
 		return true

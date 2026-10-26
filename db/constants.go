@@ -25,7 +25,7 @@ const (
 // facts use state 'confirmed', so this never collides.
 const StateOrigin = "origin"
 
-// StateIntentDeleted marks an intent the user假删除(soft delete): it drops out of
+// StateIntentDeleted는 사용자가 소프트 삭제한 의도를 표시합니다. 다음에서 제외됩니다:
 // the frontier and graph_overview like other terminal states, but keeps its node
 // and full lineage. The delete reason lives in exploration_nodes.delete_reason.
 const StateIntentDeleted = "deleted"

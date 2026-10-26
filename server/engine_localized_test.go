@@ -20,7 +20,7 @@ import (
 //   - runDetachedIntent 의 두 오류(Worker 미준비·재개 CAS 충돌) →
 //     sendWorkerMessage(intent_intervention.go:147) → writeErr. 사용자 전용이다.
 //   - 반대로 SteerWork·KillWork(steer_work·kill_work 도구 actool.Errorf)·
-//     transitionIntentState(내부 상태 전이 로그)의 중국어는 두뇌 입력·로그라 보존하며 이
+//     transitionIntentState(내부 상태 전이 로그)도 한국어이며 이
 //     테스트의 대상이 아니다.
 
 // TestControlWorkNoRunningWorkErrorLocalized 는 실행 중 work 가 없을 때 ControlWork 가

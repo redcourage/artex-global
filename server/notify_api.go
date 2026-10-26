@@ -12,14 +12,14 @@ import (
 	"github.com/Autumn-27/artex/notify"
 )
 
-// 本文件是推送功能的 HTTP 接口。全部路由挂在 requireAuth 之后（见 Handler()），
-// 与其它管理接口一致。
+// 알림 기능의 HTTP API입니다. 모든 경로는 다른 관리 API처럼 requireAuth 뒤에 연결합니다.
+// Handler()를 참고하세요.
 
 // notify_api.go 가 HTTP 응답으로 돌려주는 사용자 노출 오류 문구다. 한국어 UI 에서 알림
 // 설정 요청이 실패하면 이 문구가 그대로 토스트로 뜨므로 한국어로 둔다. 식별자(id)·JSON
 // 필드명·enum 값(realtime·digest)·채널 종류 키는 사용자가 설정을 고치는 데 쓰는 값이라
-// 원문 그대로 둔다. %s·%q 가 든 상수는 fmt.Sprintf 형식 문자열이다. 用語: 渠道→채널,
-// 通知推送→알림(크롬 nav "알림 발송"), 投递→전송, 推送模式→발송 모드. 로그·주석은 BRIEF
+// 원문 그대로 둡니다. %s·%q 상수는 fmt.Sprintf 형식 문자열입니다. 용어는 채널,
+// 알림(탐색 메뉴의 알림 발송), 전송, 발송 모드를 사용합니다. 로그와 주석도 한국어로 표시합니다.
 // 방침상 최하위라 이 묶음 밖이다.
 const (
 	notifyErrBadJSON         = "요청 본문이 올바른 JSON 형식이 아닙니다: "
@@ -42,11 +42,11 @@ const (
 	notifyTestSummary = "ARTEX 알림 채널 테스트 메시지입니다. 이 메시지를 받으셨다면 채널 설정이 정상입니다."
 )
 
-// notifyChannelDTO 是渠道的对外表述。
+// notifyChannelDTO는 채널의 외부 표현입니다.
 //
-// Config 是**掩码后**的配置：凭据字段被替换成 notify.MaskedPrefix 开头的值。
-// 前端把掩码值原样提交回来即表示「这个字段没改」，服务端据此保留库中原值
-// （见 notify.MergeConfig）。
+// Config는 마스킹된 설정이며 자격증명은 notify.MaskedPrefix로 시작하는 값으로 바꿉니다.
+// 프런트엔드가 마스킹 값을 그대로 제출하면 변경하지 않았다는 뜻이므로 서버가 원래 값을 유지합니다.
+// notify.MergeConfig를 참고하세요.
 type notifyChannelDTO struct {
 	ID         int64          `json:"id"`
 	Name       string         `json:"name"`
@@ -58,12 +58,12 @@ type notifyChannelDTO struct {
 	RatePerMin int            `json:"rate_per_min"`
 	CreatedAt  time.Time      `json:"created_at"`
 	UpdatedAt  time.Time      `json:"updated_at"`
-	// SecretKeys 告知前端哪些字段是凭据，据此渲染密码框与「留空即不改」的提示。
-	// 由渠道自己声明（notify.Channel.SecretKeys），前端不硬编码渠道知识。
+	// SecretKeys는 자격증명 필드를 알려 프런트엔드가 비밀번호 입력과 비워 두면 유지된다는 안내를 표시하도록 합니다.
+	// notify.Channel.SecretKeys에서 채널이 선언하므로 프런트엔드에 채널 정보를 하드코딩하지 않습니다.
 	SecretKeys []string `json:"secret_keys"`
 }
 
-// notifyDeliveryDTO 是投递历史的对外表述。
+// notifyDeliveryDTO는 전송 이력의 외부 표현입니다.
 type notifyDeliveryDTO struct {
 	ID          int64      `json:"id"`
 	FindingID   int64      `json:"finding_id,string"`
@@ -78,7 +78,7 @@ type notifyDeliveryDTO struct {
 	CreatedAt   time.Time  `json:"created_at"`
 	SentAt      *time.Time `json:"sent_at,omitempty"`
 	NextAttempt time.Time  `json:"next_attempt_at"`
-	// 消息标题摘要，让历史列表不必展开就能看出这条推的是什么。
+	// 이력에서 펼치지 않고도 내용을 알 수 있는 메시지 제목 요약입니다.
 	Title    string `json:"title"`
 	Severity string `json:"severity"`
 }
@@ -136,8 +136,8 @@ func toNotifyDeliveryDTO(dl *db.NotificationDelivery) notifyDeliveryDTO {
 	return dto
 }
 
-// notifyMeta 返回通知页需要的静态元数据与全局设置，一次请求拿全，
-// 避免前端为了渲染一个下拉框发三次请求。
+// notifyMeta는 알림 페이지의 정적 메타데이터와 전역 설정을 한 번에 반환하여
+// 드롭다운 하나를 그리기 위해 프런트엔드가 요청을 세 번 보내지 않도록 합니다.
 func (s *Server) notifyMeta(w http.ResponseWriter, r *http.Request) {
 	pg := s.pg(w)
 	if pg == nil {
@@ -188,10 +188,10 @@ func (s *Server) notifyListChannels(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"channels": out})
 }
 
-// notifyChannelRequest 是新建/更新渠道的请求体。
+// notifyChannelRequest는 채널 생성/수정 요청 본문입니다.
 //
-// 全部业务字段用指针，以便区分「没传」与「传了零值」：PATCH 语义下，
-// 没传的字段必须保留库中原值。
+// 모든 업무 필드는 포인터로 생략과 영값 전달을 구분합니다. PATCH에서는
+// 생략한 필드의 DB 원래 값을 유지해야 합니다.
 type notifyChannelRequest struct {
 	Name       *string        `json:"name"`
 	Kind       *string        `json:"kind"`
@@ -244,22 +244,22 @@ func (s *Server) notifyCreateChannel(w http.ResponseWriter, r *http.Request) {
 		ch.Mode = *req.Mode
 	}
 	if req.RatePerMin != nil {
-		// 显式给值就照用——包括 0，它表示「不限流」，是合法配置。
+		// 명시한 값은 그대로 사용합니다. 0도 제한 없음을 뜻하는 유효한 설정입니다.
 		if *req.RatePerMin < 0 {
 			writeErr(w, 400, notifyErrRateNegative)
 			return
 		}
 		ch.RatePerMin = *req.RatePerMin
 	}
-	// 只有「字段缺省」才套用渠道默认值。默认值必须在这里决定而不是在 db 层：
-	// 只有请求体能区分「没传这个字段」与「显式传了 0」，而两者的含义完全不同
-	// （前者=用默认，后者=不限流）。db 层把 0 也当未指定，会让不限流配置不可达。
+	// 필드가 없을 때만 채널 기본값을 적용합니다. 요청 본문만 생략과 명시적 0을
+	// 구분할 수 있으므로 DB 계층이 아니라 여기서 기본값을 결정합니다.
+	// 생략은 기본값, 0은 무제한입니다. DB가 0을 미지정으로 취급하면 무제한 설정이 불가능합니다.
 	if req.RatePerMin == nil {
 		ch.RatePerMin = channel.DefaultRatePerMin()
 	}
 	if req.Filter != nil {
-		// 写入时校验取值受限的过滤字段（如 min_severity）。详见 notify.Filter.Validate：
-		// 门槛打错字会让过滤器静默失效变成全推，必须在入口拦掉。
+		// 저장할 때 min_severity처럼 허용 값이 제한된 필터를 검증합니다(notify.Filter.Validate 참고).
+		// 임계값 오타로 필터가 조용히 무력화되어 모두 전송되지 않도록 입구에서 거부합니다.
 		if err := req.Filter.Validate(); err != nil {
 			writeErr(w, 400, err.Error())
 			return
@@ -299,7 +299,7 @@ func (s *Server) notifyUpdateChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// kind 允许修改，但改类型意味着凭据字段整套替换，不能与旧配置合并。
+	// kind 변경은 허용하지만 유형이 바뀌면 자격증명 전체를 교체해야 하므로 기존 설정과 합치지 않습니다.
 	kind := current.Kind
 	if req.Kind != nil {
 		if !notify.ValidKind(*req.Kind) {
@@ -319,8 +319,8 @@ func (s *Server) notifyUpdateChannel(w http.ResponseWriter, r *http.Request) {
 	if stored == nil {
 		stored = map[string]any{}
 	}
-	// 用 PrepareConfigUpdate 而不是裸的 MergeConfig：目标地址变更时必须让操作者
-	// 对凭据字段重新表态，否则「只改地址、凭据沿用」会把库里的真凭据发到新地址。
+	// 대상 주소가 바뀌면 사용자가 자격증명을 다시 지정해야 하므로 MergeConfig 대신 PrepareConfigUpdate를 사용합니다.
+	// 주소만 바꾸고 기존 자격증명을 유지하면 실제 저장된 자격증명이 새 주소로 전송될 수 있습니다.
 	merged, err := notify.PrepareConfigUpdate(kind, stored, req.Config)
 	if err != nil {
 		writeErr(w, 400, err.Error())
@@ -374,13 +374,13 @@ func (s *Server) notifyUpdateChannel(w http.ResponseWriter, r *http.Request) {
 		ch.Filter = raw
 	}
 
-	// 走 SetNotificationChannelEnabled 而非 SaveNotificationChannel 的路径，
-	// 是为了让「停用」同时把存量待发投递标记为 skipped，避免重新启用时收到
-	// 一批已过时的积压消息。
+	// SaveNotificationChannel 대신 SetNotificationChannelEnabled로 전환하여
+	// 비활성화와 동시에 대기 전송을 skipped로 표시하고 재활성화 시
+	// 오래된 적체 메시지가 몰려오지 않도록 합니다.
 	enabledChanged := ch.Enabled != nil && current.Enabled != nil && *ch.Enabled != *current.Enabled
 	if enabledChanged {
-		// 先把配置更新落库（此时 enabled 用旧值，避免提前触发跳过逻辑），
-		// 再单独切开关。两步之间没有并发窗口：本接口是唯一改这两个字段的入口。
+		// 먼저 기존 enabled를 유지한 채 설정을 저장하여 건너뛰기 처리가 일찍 일어나지 않게 한 뒤
+		// 스위치를 별도로 전환합니다. 이 API만 두 필드를 변경하므로 두 단계 사이의 동시 변경 창은 없습니다.
 		prev := ch.Enabled
 		ch.Enabled = current.Enabled
 		if _, err := pg.SaveNotificationChannel(r.Context(), ch); err != nil {
@@ -418,11 +418,11 @@ func (s *Server) notifyDeleteChannel(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"ok": true})
 }
 
-// notifyTestChannel 用当前保存的配置发一条测试消息。
+// notifyTestChannel은 현재 저장된 설정으로 테스트 메시지 하나를 보냅니다.
 //
-// 直接调用渠道 Send 而不经投递队列：测试的目的是立刻告诉用户「这套配置能不能
-// 发出去」，走队列会把结果藏进投递历史，用户得再去翻一遍才知道成没成。
-// 因此本接口是**同步**的，超时上限由 notify 包的 HTTP 客户端决定（15 秒）。
+// 사용자에게 설정의 전송 가능 여부를 바로 알려야 하므로 큐를 거치지 않고 채널 Send를 호출합니다.
+// 큐를 사용하면 결과가 이력에 숨겨져 사용자가 다시 찾아야 합니다.
+// 따라서 동기 API이며 시간 제한은 notify HTTP 클라이언트의 15초입니다.
 func (s *Server) notifyTestChannel(w http.ResponseWriter, r *http.Request) {
 	pg := s.pg(w)
 	if pg == nil {
@@ -453,10 +453,10 @@ func (s *Server) notifyTestChannel(w http.ResponseWriter, r *http.Request) {
 	}
 	msg := notifyTestMessage(s.notifierBaseURL(pg))
 	start := time.Now()
-	// 测试消息只有一条，送达条数这里不需要（渠道长度上限对单条消息而言
-	// 由截断兜底，不涉及分段）。
+	// 테스트 메시지는 하나뿐이므로 전달 항목 수는 필요 없습니다. 단일 메시지의 채널 길이 제한은
+	// 잘림 처리로 보완하며 분할 전송은 하지 않습니다.
 	if _, err := channel.Send(r.Context(), cfg, msg); err != nil {
-		// 把渠道返回的原始错误如实回给用户——这是他们调试配置的唯一线索。
+		// 설정을 디버깅할 유일한 단서이므로 채널이 반환한 원본 오류를 사용자에게 그대로 전달합니다.
 		writeErr(w, 502, err.Error())
 		return
 	}
@@ -466,8 +466,8 @@ func (s *Server) notifyTestChannel(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// notifyTestMessage 构造测试消息。刻意用一眼能看出是测试的内容：
-// 收到的人不应该把它误判成真实漏洞。
+// notifyTestMessage는 테스트임을 바로 알아볼 수 있는 내용으로 메시지를 만들어
+// 수신자가 실제 취약점으로 오인하지 않도록 합니다.
 func notifyTestMessage(baseURL string) notify.Message {
 	return notify.Message{
 		Items: []notify.Item{{
@@ -483,7 +483,7 @@ func notifyTestMessage(baseURL string) notify.Message {
 	}
 }
 
-// notifierBaseURL 读回链用的外部地址。
+// notifierBaseURL은 상세 링크용 외부 주소를 읽습니다.
 func (s *Server) notifierBaseURL(pg *db.DB) string {
 	v, _, _ := pg.GetSetting(settingNotifyPublicBaseURL)
 	return trimTrailingSlash(v)
@@ -532,7 +532,7 @@ func (s *Server) notifyRetryDelivery(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"ok": true})
 }
 
-// notifyChannelLookupErr 把「渠道不存在」翻译成 404，其余错误 500。
+// notifyChannelLookupErr는 채널 없음 오류를 404, 나머지를 500으로 변환합니다.
 func notifyChannelLookupErr(w http.ResponseWriter, err error) {
 	if errors.Is(err, db.ErrNotificationChannelNotFound) {
 		writeErr(w, 404, notifyErrChannelNotFound)
