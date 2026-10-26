@@ -14,18 +14,18 @@ func noaWarn(session string) func(string) {
 	return func(msg string) { log.Printf("[noa] %s: %s", session, msg) }
 }
 
-// noa 是 norma v0.4.0 引入的「模型驱动上下文压缩」机制,作为平台实验功能由用户在
-// 系统设置中开关。它与内置 compaction 互斥:noaadapter.Enable 是唯一入口,一次挂上
-// 上下文接管器(Compactor)、Compress 工具与三段常驻提示词,不调用 Enable 即为关闭
-// (内置 compaction 照常工作)。开关由每个 agent 注入的 noaEnabledFn 解析,每 run 读
-// 一次,故切换只影响之后启动的 run,无需重建 agent。
+// noa는 norma v0.4.0의 모델 주도 문맥 압축이며 사용자가 시스템 설정에서 켜고 끄는
+// 플랫폼 실험 기능이다. 내장 compaction과 배타적이며 noaadapter.Enable이 유일한 진입점으로
+// Compactor, Compress 도구, 세 개의 상주 프롬프트를 한 번에 연결한다. Enable을 호출하지 않으면 꺼져 있고
+// 내장 compaction이 그대로 작동한다. 각 agent에 주입한 noaEnabledFn을 run마다 한 번 읽으므로
+// 전환은 이후 시작하는 run에만 영향을 주며 agent를 다시 만들 필요 없다.
 
-// enableNoa 在解析器报告开启时把 noa 接入 opts。archiveRoot 是压缩原文的持久化基目录
-// (取全局 workDir,各 agent 统一落在 <workDir>/noa 下,不随任务/意图目录分散),sessionID
-// 命名其下的归档子目录(全局唯一,故同一基目录内不冲突)。
+// enableNoa는 활성화 해석 결과에 따라 opts에 noa를 연결한다. archiveRoot는 압축 원문 영구 저장의 기준 디렉터리다.
+// 전역 workDir를 사용하며 모든 agent가 <workDir>/noa에 모이고 작업/의도 디렉터리로 분산하지 않는다. sessionID는
+// 하위 아카이브 디렉터리 이름이며 전역 고유하므로 같은 기준 디렉터리에서 충돌하지 않는다.
 //
-// noa 是实验功能:接入失败不得中断真实任务。发生错误时经 onWarn 上报并回退内置压缩。
-// 启用成功时清掉 opts.Compaction,避免 agentcore 因「两个上下文管理器同时设置」告警。
+// noa는 실험 기능이므로 연결 실패가 실제 작업을 중단해서는 안 된다. 오류는 onWarn으로 보고하고 내장 압축으로 대체한다.
+// 활성화 성공 시 opts.Compaction을 비워 두 문맥 관리자가 동시에 설정되었다는 agentcore 경고를 피한다.
 func enableNoa(opts *agentcore.Options, enabled func() bool, archiveRoot, sessionID string, onWarn func(string)) {
 	if enabled == nil || !enabled() {
 		return
@@ -39,10 +39,10 @@ func enableNoa(opts *agentcore.Options, enabled func() bool, archiveRoot, sessio
 		OnWarn:         onWarn,
 	}); err != nil {
 		if onWarn != nil {
-			onWarn("noa 压缩启用失败,回退内置压缩:" + err.Error())
+			onWarn("noa 압축 활성화 실패, 내장 압축으로 대체:" + err.Error())
 		}
 		return
 	}
-	// Compactor 覆盖 Compaction,但两者并存时 agentcore 每次会告警;明确清掉。
+	// Compactor가 Compaction을 덮어쓰지만 둘이 공존하면 매번 경고하므로 명시적으로 비운다.
 	opts.Compaction = nil
 }

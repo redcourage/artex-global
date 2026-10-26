@@ -14,7 +14,7 @@ func derived(from, to int64) cgEdge        { return cgEdge{From: from, Rel: db.R
 
 func ptr(v int64) *int64 { return &v }
 
-// §附 快照1: a→b→c, b→d, with d live (running) and c settled/inactive.
+// §부록 스냅샷1: a→b→c, b→d, d는 running이고 c는 종료/비활성 상태.
 // Expected: d/b/a hot (b kept hot by the live b→d branch); c is a cold candidate
 // but an isolated singleton → not folded.
 func TestHotCold_AnyLiveBranchKeepsChainHot(t *testing.T) {
@@ -37,7 +37,7 @@ func TestHotCold_AnyLiveBranchKeepsChainHot(t *testing.T) {
 	}
 }
 
-// §附 快照2: once d also finishes, a/b/c/d are all cold and connected → one block.
+// §부록 스냅샷2: d도 종료하면 a/b/c/d 모두 연결된 cold가 되어 하나의 블록.
 func TestHotCold_WholeChainFoldsWhenAllSettled(t *testing.T) {
 	nodes := []cgNode{intent(1, "done"), intent(2, "done"), fact(3), intent(4, "done")}
 	edges := []cgEdge{derived(1, 2), yields(2, 3), derived(2, 4)}
